@@ -6,20 +6,15 @@ import { FormsModule } from '@angular/forms';
 //mat modules
 import { MatIconModule } from '@angular/material/icon';
 import { HttpClientModule, HttpClient } from '@angular/common/http';
-
+//
+import { CoreModule } from '@app/core';
 import { AppRoutingModule } from './app-routing.module';
-
 // NG Translate
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
-
-import { ElectronService } from './providers/electron.service';
-
-import { WebviewDirective } from './directives/webview.directive';
-
-import { AppComponent } from './app.component';
-import { HomeComponent } from './components/home/home.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { AppComponent } from './app.component';
+
 
 // AoT requires an exported function for factories
 export function HttpLoaderFactory(http: HttpClient) {
@@ -28,13 +23,12 @@ export function HttpLoaderFactory(http: HttpClient) {
 
 @NgModule({
   declarations: [
-    AppComponent,
-    HomeComponent,
-    WebviewDirective
+    AppComponent
   ],
   imports: [
     BrowserModule,
     FormsModule,
+    CoreModule,
     HttpClientModule,
     AppRoutingModule,
     MatIconModule,
@@ -47,7 +41,7 @@ export function HttpLoaderFactory(http: HttpClient) {
     }),
     BrowserAnimationsModule
   ],
-  providers: [ElectronService],
+  providers: [],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -1,6 +1,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "baseUrl": "./",
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
     "declaration": false,
@@ -16,13 +17,17 @@
       "es2016",
       "es2015",
       "dom"
-    ]
-  },
-  "include": [
-    "main.ts",
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+    ],
+    "paths": {
+      "@env/*": [
+        "src/environments/*"
+      ],
+      "@app/core": [
+        "src/app/core/public_api"
+      ],
+      "@app/shared": [
+        "src/app/shared/public_api"
+      ]
+    }
+  }
 }
