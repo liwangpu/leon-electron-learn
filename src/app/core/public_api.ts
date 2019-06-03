@@ -3,3 +3,4 @@ export * from './core.module';
 export * from './services/electron.service';
 export * from './services/browser-window.service';
 export * from './services/electron-dialog.service';
+export * from './services/drag-drop-opsat.service';

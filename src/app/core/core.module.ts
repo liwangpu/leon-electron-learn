@@ -2,6 +2,7 @@ import { NgModule, Optional, ModuleWithProviders, SkipSelf } from '@angular/core
 import { ElectronService } from './services/electron.service';
 import { BrowserWindowService } from './services/browser-window.service';
 import { ElectronDialogService } from './services/electron-dialog.service';
+import { DragDropOpsatService } from './services/drag-drop-opsat.service';
 
 
 @NgModule({
@@ -9,7 +10,8 @@ import { ElectronDialogService } from './services/electron-dialog.service';
   providers: [
     ElectronService,
     BrowserWindowService,
-    ElectronDialogService
+    ElectronDialogService,
+    DragDropOpsatService
   ]
 })
 export class CoreModule {
