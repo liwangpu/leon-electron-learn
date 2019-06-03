@@ -2,10 +2,11 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { MorejeeRoutingModule } from './morejee-routing.module';
-import { MainComponent } from './components/main/main.component';
+import { AssetUploaderComponent } from './components/asset-uploader/asset-uploader.component';
+import { TextureToMaterialComponent } from './components/texture-to-material/texture-to-material.component';
 
 @NgModule({
-  declarations: [MainComponent],
+  declarations: [AssetUploaderComponent, TextureToMaterialComponent],
   imports: [
     CommonModule,
     MorejeeRoutingModule

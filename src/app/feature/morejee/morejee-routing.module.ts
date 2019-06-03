@@ -1,11 +1,17 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
-import { MainComponent } from './components/main/main.component';
+import { AssetUploaderComponent } from './components/asset-uploader/asset-uploader.component';
+import { TextureToMaterialComponent } from './components/texture-to-material/texture-to-material.component';
+
 
 const routes: Routes = [
   {
-    path: '',
-    component: MainComponent
+    path: 'asset-uploader',
+    component: AssetUploaderComponent
+  }
+  , {
+    path: 'texture-to-material',
+    component: TextureToMaterialComponent
   }
   , { path: '**', redirectTo: '' }
 ];

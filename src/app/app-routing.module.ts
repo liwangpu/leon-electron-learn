@@ -4,10 +4,10 @@ import { Routes, RouterModule } from '@angular/router';
 
 const routes: Routes = [
     {
-        path: 'morejee',
-        loadChildren: './feature/morejee/morejee.module#MorejeeModule'
+        path: 'app',
+        loadChildren: './feature/main/main.module#MainModule'
     }
-    , { path: '**', redirectTo: 'morejee' }
+    , { path: '**', redirectTo: 'app' }
 ];
 
 @NgModule({
