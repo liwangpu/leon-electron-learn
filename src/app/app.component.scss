@@ -1,4 +1,4 @@
-div.window {
+div.win {
   display: flex;
   flex-flow: column;
   width: 100%;
@@ -10,18 +10,26 @@ div.window {
     justify-content: space-between;
     height: 30px;
     -webkit-app-region: drag;
+    div.flag {
+      display: flex;
+      flex-flow: row;
+      align-items: center;
+      p.title {
+        font-size: 1rem;
+        padding-left: 0.5rem;
+      }
+    }
     div.windowbars {
       height: 100%;
       display: flex;
       align-items: center;
       color: #656565;
       -webkit-app-region: no-drag;
-      .bar {
-        $size: 14px;
-        width: $size;
-        height: $size;
-        font-size: $size;
-        padding: 8px 7px;
+      div.bar {
+        $bar-icon-size: 16px;
+        width: 30px;
+        height: 30px;
+        padding: (30px - $bar-icon-size)/2;
         &.close {
           &:hover {
             color: white;
@@ -32,10 +40,15 @@ div.window {
           cursor: pointer;
           background-color: #e0e0e0;
         }
+        .bar-icon {
+          width: $bar-icon-size;
+          height: $bar-icon-size;
+          font-size: $bar-icon-size;
+        }
       }
     }
   }
-  div.content {
+  div.browser {
     flex: 1 1 0;
   }
 }

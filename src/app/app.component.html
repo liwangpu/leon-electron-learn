@@ -1,15 +1,23 @@
-<div class="window">
+<div class="win">
     <div class="header">
-        <div class="flag"></div>
+        <div class="flag">
+            <p class="title">魔集资源管理器</p>
+        </div>
         <div class="windowbars">
-            <mat-icon class="bar" (click)='browserWinSrv.minimize()'>remove</mat-icon>
-            <mat-icon class="bar" (click)='toggleWindowMode()'>
-                {{_maxWindow?"fullscreen_exit":"fullscreen"}}
-            </mat-icon>
-            <mat-icon class="bar close" (click)='browserWinSrv.close()'>close</mat-icon>
+            <div class="bar" (click)='browserWinSrv.minimize()'>
+                <mat-icon class="bar-icon">remove</mat-icon>
+            </div>
+            <div class="bar" (click)='toggleWindowMode()'>
+                <mat-icon class="bar-icon">
+                    {{_maxWindow?"fullscreen_exit":"fullscreen"}}
+                </mat-icon>
+            </div>
+            <div class="bar close" (click)='browserWinSrv.close()'>
+                <mat-icon class="bar-icon">close</mat-icon>
+            </div>
         </div>
     </div>
-    <div class="content">
+    <div class="browser">
         <router-outlet></router-outlet>
     </div>
 </div>
