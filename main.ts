@@ -16,7 +16,7 @@ function createWindow() {
     x: 0,
     y: 0,
     width: 800,
-    height: 450,
+    height: 600,
     webPreferences: {
       nodeIntegration: true,
     },
@@ -36,9 +36,9 @@ function createWindow() {
     }));
   }
 
-  if (serve) {
-    win.webContents.openDevTools();
-  }
+  // if (serve) {
+  //   win.webContents.openDevTools();
+  // }
 
   // Emitted when the window is closed.
   win.on('closed', () => {

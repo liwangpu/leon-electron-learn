@@ -1,10 +1,14 @@
 import { NgModule, Optional, ModuleWithProviders, SkipSelf } from '@angular/core';
 import { ElectronService } from './services/electron.service';
+import { BrowserWindowService } from './services/browser-window.service';
 
 
 @NgModule({
   declarations: [],
-  providers: [ElectronService]
+  providers: [
+    ElectronService,
+    BrowserWindowService
+  ]
 })
 export class CoreModule {
   constructor(@Optional() @SkipSelf() parentModule: CoreModule) {

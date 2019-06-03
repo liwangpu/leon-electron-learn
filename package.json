@@ -12,6 +12,7 @@
   "main": "main.js",
   "private": true,
   "scripts": {
+    "tsc": "tsc",
     "postinstall": "npm run postinstall:electron && electron-builder install-app-deps",
     "postinstall:web": "node postinstall-web",
     "postinstall:electron": "node postinstall",

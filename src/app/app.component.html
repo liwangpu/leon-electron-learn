@@ -2,9 +2,16 @@
 
 <div class="window">
     <div class="header">
-        <div class="fla"></div>
-        <div class="bar">
-            <mat-icon class="winbar">close</mat-icon>
+        <div class="flag"></div>
+        <div class="windowbars">
+            <mat-icon class="bar" (click)='browserWinSrv.minimize()'>remove</mat-icon>
+            <mat-icon class="bar" (click)='toggleWindowMode()'>
+                {{_maxWindow?"fullscreen_exit":"fullscreen"}}
+            </mat-icon>
+            <mat-icon class="bar close" (click)='browserWinSrv.close()'>close</mat-icon>
         </div>
+    </div>
+    <div class="content">
+        aksdjf
     </div>
 </div>

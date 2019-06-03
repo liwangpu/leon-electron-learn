@@ -12,23 +12,25 @@ export class ElectronService {
   ipcRenderer: typeof ipcRenderer;
   webFrame: typeof webFrame;
   remote: typeof remote;
-  window: typeof BrowserWindow;
+  win: BrowserWindow;
   childProcess: typeof childProcess;
   fs: typeof fs;
 
+  get isElectron(): boolean {
+    return window && window.process && window.process.type;
+  }
+
   constructor() {
     // Conditional imports
-    if (this.isElectron()) {
+    if (this.isElectron) {
       this.ipcRenderer = window.require('electron').ipcRenderer;
       this.webFrame = window.require('electron').webFrame;
       this.remote = window.require('electron').remote;
-      this.window = window.require('electron').window;
+      this.win = window.require('electron').remote.getCurrentWindow();
       this.childProcess = window.require('child_process');
       this.fs = window.require('fs');
     }
-  }
+  }//constructor
 
-  isElectron = () => {
-    return window && window.process && window.process.type;
-  }
+
 }
