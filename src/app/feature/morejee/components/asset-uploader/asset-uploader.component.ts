@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ElectronDialogService } from '@app/core';
 
 @Component({
   selector: 'morejee-asset-uploader',
@@ -7,9 +8,15 @@ import { Component, OnInit } from '@angular/core';
 })
 export class AssetUploaderComponent implements OnInit {
 
-  constructor() { }
+  constructor(protected electDialogSrv: ElectronDialogService) {
+
+  }//constructor
 
   ngOnInit() {
-  }
 
+  }//ngOnInit
+
+  selectProjectDir() {
+    this.electDialogSrv.showOpenDialog({ properties: ['openDirectory'] });
+  }//selectProjectDir
 }
