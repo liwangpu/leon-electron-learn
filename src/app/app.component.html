@@ -9,7 +9,8 @@
             </div>
             <div class="bar" (click)='toggleWindowMode()'>
                 <mat-icon class="bar-icon">
-                    {{_maxWindow?"fullscreen_exit":"fullscreen"}}
+                        fullscreen
+                    <!-- {{!_maxWindowState?"fullscreen_exit":"fullscreen"}} -->
                 </mat-icon>
             </div>
             <div class="bar close" (click)='browserWinSrv.close()'>

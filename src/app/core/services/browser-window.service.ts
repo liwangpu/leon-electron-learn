@@ -1,34 +1,34 @@
 import { Injectable } from '@angular/core';
 import { ElectronService } from './electron.service';
-
+import { Subject } from 'rxjs';
+import { remote, BrowserWindow } from "electron";
 @Injectable()
 export class BrowserWindowService {
 
-  constructor(protected electSrv: ElectronService) {
+  // private _browserWindowEvents = new Subject<{ topic: string, data?: any }>();
+  // browserWindowEvents = this._browserWindowEvents.asObservable();
+  private _currentWindow: BrowserWindow;
 
+  get isMaximize(): boolean {
+    return this._currentWindow.isMaximized();
+  }
+  constructor() {
+    this._currentWindow = remote.getCurrentWindow();
   }//constructor
 
   minimize() {
-    if (this.electSrv.isElectron) {
-      this.electSrv.win.minimize();
-    }//if
+    this._currentWindow.minimize();
   }//minimize
 
   maximize() {
-    if (this.electSrv.isElectron) {
-      this.electSrv.win.maximize();
-    }//if
+    this._currentWindow.maximize();
   }//maximize
 
   unmaximize() {
-    if (this.electSrv.isElectron) {
-      this.electSrv.win.unmaximize();
-    }//if
+    this._currentWindow.unmaximize();
   }//unmaximize
 
   close() {
-    if (this.electSrv.isElectron) {
-      this.electSrv.win.close();
-    }//if
+    this._currentWindow.close();
   }//close
 }

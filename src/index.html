@@ -32,13 +32,32 @@
 
 <script>
   // const { ipcRenderer } = require('electron');
+
+
+  // setInterval(() => {
+  //   ipcRenderer.send("soso", new Date());
+  // }, 2000);
+
+  document.addEventListener("ondragover", function (event) {
+    // store a ref. on the dragged elem
+    // dragged = event.target;
+    // // make it half transparent
+    // event.target.style.opacity = .5;
+    console.log('开始拖拽了哦');
+  }, false);
+
+
+  //   document.ondragover = document.ondrop = (ev) => {
+  //   ev.preventDefault()
+  // }
+
   // document.ondragover = document.ondrop = (ev) => {
   //   ev.preventDefault()
   // }
   // document.body.ondrop = (ev) => {
   //   // console.log(ev.dataTransfer.files[0].path)
-  //   ev.preventDefault()
-  //   // ipcRenderer.send('app-ondragend', ev.dataTransfer.files[0].path);
+  //   ev.preventDefault();
+  //   ipcRenderer.send('app-ondragend', ev.dataTransfer.files[0].path);
   //   // ipcRenderer.send('app-ondragend', 'Hello World');
 
   // }

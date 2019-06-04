@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { BrowserWindowService } from '@app/core';
+import { filter } from "rxjs/operators";
 
 @Component({
   selector: 'app-root',
@@ -8,7 +9,7 @@ import { BrowserWindowService } from '@app/core';
 })
 export class AppComponent {
 
-  _maxWindow = false;
+  _maxWindowState = false;
   constructor(protected browserWinSrv: BrowserWindowService) {
 
     // translate.setDefaultLang('en');
@@ -21,13 +22,28 @@ export class AppComponent {
     // } else {
     //   console.log('Mode web');
     // }
+
+    // this.browserWinSrv.browserWindowEvents.pipe(filter(tp => tp.topic == 'maximize')).subscribe(() => {
+    //   this._maxWindowState = true;
+    //   // console.log('maximize',this._maxWindowState);
+    // });//subscribe
+    // this.browserWinSrv.browserWindowEvents.pipe(filter(tp => tp.topic == 'unmaximize')).subscribe(() => {
+    //   this._maxWindowState = false;
+    //   // console.log('unmaximize',this._maxWindowState);
+    // });//subscribe
+
+
   }//constructor
 
   toggleWindowMode() {
-    this._maxWindow = !this._maxWindow;
-    if (this._maxWindow)
-      this.browserWinSrv.maximize();
-    else
+    if (this.browserWinSrv.isMaximize)
       this.browserWinSrv.unmaximize();
+    else
+      this.browserWinSrv.maximize();
+    // if (this._maxWindowState)
+    //   this.browserWinSrv.unmaximize();
+    // else
+    //   this.browserWinSrv.maximize();
+    // this._maxWindowState = !this._maxWindowState;
   }//toggleWindowMode
 }

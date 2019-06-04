@@ -1,15 +1,17 @@
 import { app, BrowserWindow, screen } from 'electron';
+import { remote } from "electron";
 import * as path from 'path';
 import * as url from 'url';
 
 let win, serve;
+// let ipcMain;
 const args = process.argv.slice(1);
 serve = args.some(val => val === '--serve');
 
 function createWindow() {
 
-  const electronScreen = screen;
-  const size = electronScreen.getPrimaryDisplay().workAreaSize;
+  // const electronScreen = screen;
+  // const size = electronScreen.getPrimaryDisplay().workAreaSize;
 
   // Create the browser window.
   win = new BrowserWindow({
@@ -39,6 +41,14 @@ function createWindow() {
   if (serve) {
     win.webContents.openDevTools();
   }
+
+  // win.on('maximize', () => {
+  //   console.log('you maximize window', new Date());
+  // });
+
+  // win.on('unmaximize', () => {
+  //   console.log('you unmaximize window', new Date());
+  // });
 
   // Emitted when the window is closed.
   win.on('closed', () => {

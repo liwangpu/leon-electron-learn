@@ -1,18 +1,16 @@
 import { Injectable } from '@angular/core';
-import { ElectronService } from './electron.service';
+import { remote, Dialog } from "electron";
 
 @Injectable()
 export class ElectronDialogService {
 
-  constructor(protected electSrv: ElectronService) {
-
+  private _dialog: Dialog;
+  constructor() {
+    this._dialog = remote.dialog;
   }//constructor
 
-  showOpenDialog(option?: object) {
-    if (!this.electSrv.isElectron) return;
-    let projectDir = this.electSrv.remote.dialog.showOpenDialog(option);
-
-    console.log('project dir:',projectDir);
+  showOpenDialog(option?: object): string[] {
+    return this._dialog.showOpenDialog(option);
   }//showOpenDialog
 
 }

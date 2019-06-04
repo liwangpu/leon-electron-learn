@@ -8,6 +8,7 @@ import { ElectronDialogService } from '@app/core';
 })
 export class AssetUploaderComponent implements OnInit {
 
+  _projectDir="";
   constructor(protected electDialogSrv: ElectronDialogService) {
 
   }//constructor
@@ -17,6 +18,8 @@ export class AssetUploaderComponent implements OnInit {
   }//ngOnInit
 
   selectProjectDir() {
-    this.electDialogSrv.showOpenDialog({ properties: ['openDirectory'] });
+    let dirs = this.electDialogSrv.showOpenDialog({ properties: ['openDirectory'] });
+    if (dirs && dirs.length > 0)
+      this._projectDir = dirs[0];
   }//selectProjectDir
 }
