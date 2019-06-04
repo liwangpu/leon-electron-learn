@@ -1,0 +1,5 @@
+{
+    "message": {
+        "cannotFindAssetListFile": "没有在目录下发现\\Saved\\AssetMan\\assetlist.txt,请确认是否选中项目目录或者文件是否存在"
+    }
+}

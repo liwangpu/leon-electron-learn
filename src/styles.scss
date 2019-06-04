@@ -1,10 +1,5 @@
-/* You can add global styles to this file, and also import other style files */
-html, body {
-  margin: 0;
-  padding: 0;
-
-  height: 100%;
+body {
+  font-family: Roboto, "宋体", "仿宋", "楷体", "华文宋体", "华文黑体", "华文仿宋", "楷体", "Helvetica Neue", sans-serif;
 }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+@import "./styles.material.scss";

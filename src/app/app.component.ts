@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
-import { BrowserWindowService } from '@app/core';
+import { BrowserWindowService, AppCacheService } from '@app/core';
 import { filter } from "rxjs/operators";
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-root',
@@ -10,28 +11,20 @@ import { filter } from "rxjs/operators";
 export class AppComponent {
 
   _maxWindowState = false;
-  constructor(protected browserWinSrv: BrowserWindowService) {
+  constructor(private translateSrv: TranslateService, private cacheSrv: AppCacheService, protected browserWinSrv: BrowserWindowService) {
 
-    // translate.setDefaultLang('en');
-    // console.log('AppConfig', AppConfig);
+    let lastLanguage = this.cacheSrv.lastLanguage;
+    if (lastLanguage) {
+      this.translateSrv.use(lastLanguage);
+    }
+    else {
+      let broswerLang = this.translateSrv.getBrowserLang();
+      broswerLang = broswerLang && broswerLang.match(/en|zh/) ? broswerLang : 'zh';
+      this.translateSrv.use(broswerLang);
+      this.cacheSrv.lastLanguage = broswerLang;
+    }
 
-    // if (electronService.isElectron) {
-    //   console.log('Mode electron');
-    //   console.log('Electron ipcRenderer', electronService.ipcRenderer);
-    //   console.log('NodeJS childProcess', electronService.childProcess);
-    // } else {
-    //   console.log('Mode web');
-    // }
-
-    // this.browserWinSrv.browserWindowEvents.pipe(filter(tp => tp.topic == 'maximize')).subscribe(() => {
-    //   this._maxWindowState = true;
-    //   // console.log('maximize',this._maxWindowState);
-    // });//subscribe
-    // this.browserWinSrv.browserWindowEvents.pipe(filter(tp => tp.topic == 'unmaximize')).subscribe(() => {
-    //   this._maxWindowState = false;
-    //   // console.log('unmaximize',this._maxWindowState);
-    // });//subscribe
-
+    // console.log(process.versions);
 
   }//constructor
 

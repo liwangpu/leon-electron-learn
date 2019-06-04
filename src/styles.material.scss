@@ -1,0 +1,16 @@
+// .cdk-global-overlay-wrapper,
+// .cdk-overlay-container {
+//   height: 100%;
+// }
+
+div.cdk-overlay-container {
+  div.cdk-global-overlay-wrapper {
+    div.cdk-overlay-pane {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      margin: auto;
+    }
+  }
+}

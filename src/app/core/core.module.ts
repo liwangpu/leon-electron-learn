@@ -3,15 +3,24 @@ import { ElectronService } from './services/electron.service';
 import { BrowserWindowService } from './services/browser-window.service';
 import { ElectronDialogService } from './services/electron-dialog.service';
 import { DragDropOpsatService } from './services/drag-drop-opsat.service';
-
-
+import { AppCacheService } from './services/app-cache.service';
+import { LocalStoreService } from './services/local-store.service';
+import { TranslateModule } from '@ngx-translate/core';
+import { MessageCenterService } from './services/message-center.service';
+import {MatSnackBarModule} from '@angular/material/snack-bar';
 @NgModule({
-  declarations: [],
+  imports: [
+    TranslateModule,
+    MatSnackBarModule
+  ],
   providers: [
     ElectronService,
     BrowserWindowService,
     ElectronDialogService,
-    DragDropOpsatService
+    DragDropOpsatService,
+    AppCacheService,
+    LocalStoreService,
+    MessageCenterService
   ]
 })
 export class CoreModule {
