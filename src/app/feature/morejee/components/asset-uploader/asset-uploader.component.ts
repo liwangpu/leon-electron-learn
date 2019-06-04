@@ -55,6 +55,12 @@ export class AssetUploaderComponent implements OnInit {
   test() {
     console.log('点我干嘛', new Date());
   }
+
+  clearAssetList() {
+    this._projectDir = "";
+    this._allAssetDataMap = [];
+  }//clearAssetList
+
   selectProjectDir() {
     // this.messageSrv.message("message.cannotFindAssetListFile",true);
 

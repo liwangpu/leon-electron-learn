@@ -2,6 +2,7 @@
   <div class="header">
     <p class="label">项目地址：</p>
     <input type="text" readonly='true' class="project-dir" [value]='_projectDir'>
+    <button class="normal clear ml" mat-stroked-button (click)='clearAssetList()'>清空</button>
     <button class="normal ml" mat-stroked-button (click)='selectProjectDir()'>选择</button>
     <button class="normal ml" mat-stroked-button>上传</button>
   </div>
@@ -29,5 +30,8 @@
       </table>
     </div>
     <!-- <button (click)='test()'>测试</button> -->
+  </div>
+  <div class="footer">
+    <p class="process">进度：0/149</p>
   </div>
 </div>

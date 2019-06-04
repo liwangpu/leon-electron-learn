@@ -1,53 +1,57 @@
 div.page {
-  display: flex;
-  flex-flow: column;
-  width: 100%;
-  height: 100%;
-  padding: 0.5rem;
-
-  div.navs {
+    display: flex;
+    flex-flow: column;
     width: 100%;
+    height: 100%;
+    // padding: 0.5rem;
 
-    p.nav {
-      display: inline-block;
-      padding: 0.2rem 0;
-      margin-right: 15px;
-      position: relative;
-      outline: none;
-
-      &::after {
-        position: absolute;
-        bottom: -1px;
-        left: 0;
-        content: "";
-        display: inline-block;
+    div.navs {
         width: 100%;
-        height: 2px;
-        background-color: orange;
-        transform: scale(0);
-        transition: transform 0.2s;
-      }
+        padding: 0 .5rem;
 
-      &:hover {
-        cursor: pointer;
-        &::after {
-          transform: scale(1);
-        }
-      }
+        p.nav {
+            display: inline-block;
+            padding: 0.2rem 0;
+            margin-right: 15px;
+            position: relative;
+            outline: none;
+            font-weight: 400;
+            font-size: 1rem;
+            // &::after {
+            //     position: absolute;
+            //     bottom: -1px;
+            //     left: 0;
+            //     content: "";
+            //     display: inline-block;
+            //     width: 100%;
+            //     height: 2px;
+            //     background-color: orange;
+            //     transform: scale(0);
+            //     transition: transform 0.2s;
+            // }
 
-      &.active {
-        &::after {
-            transform: scale(1);
-            background-color: #1e88e5;
+            &:hover {
+                cursor: pointer;
+
+                // &::after {
+                //     transform: scale(1);
+                // }
+            }
+
+            &.active {
+                color: #1e88e5;
+                // &::after {
+                //     transform: scale(1);
+                //     background-color: #1e88e5;
+                // }
+            }
         }
-      }
+
+        // height: 50px;
+        // background-color: gray;
     }
 
-    // height: 50px;
-    // background-color: gray;
-  }
-
-  div.content {
-    flex: 1 1 0;
-  }
+    div.content {
+        flex: 1 1 0;
+    }
 }
