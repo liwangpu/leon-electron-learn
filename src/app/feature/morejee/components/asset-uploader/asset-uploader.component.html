@@ -1,7 +1,9 @@
 <div class="container">
   <div class="header">
     <p class="label">项目地址：</p>
-    <input type="text" readonly='true' class="project-dir" (click)='selectProjectDir()' [value]='_projectDir'>
+    <input type="text" readonly='true' class="project-dir" [value]='_projectDir'>
+    <button class="normal ml" mat-stroked-button (click)='selectProjectDir()'>选择</button>
+    <button class="normal ml" mat-stroked-button>上传</button>
   </div>
   <div class="content">
     <div class="asset-list">

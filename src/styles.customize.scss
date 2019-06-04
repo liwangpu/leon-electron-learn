@@ -1,0 +1,9 @@
+button.mat-stroked-button {
+    &.normal {
+        line-height: 25px;
+        font-size: .8rem;
+        padding: 0 10px;
+        min-width: 40px; 
+        border-radius: 2px;
+    }
+}

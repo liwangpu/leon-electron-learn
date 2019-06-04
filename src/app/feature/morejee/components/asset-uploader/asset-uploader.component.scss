@@ -23,6 +23,10 @@ div.container {
             border-radius: 2px;
         }
 
+        button.ml {
+            margin-left: 8px;
+        }
+
     }
 
     div.content {
@@ -36,6 +40,7 @@ div.container {
             height: 100%;
             overflow: auto;
             background-color: white;
+
             table {
                 width: 100%;
                 min-width: 600px;
