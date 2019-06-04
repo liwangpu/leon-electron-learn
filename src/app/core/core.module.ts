@@ -7,7 +7,7 @@ import { AppCacheService } from './services/app-cache.service';
 import { LocalStoreService } from './services/local-store.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { MessageCenterService } from './services/message-center.service';
-import {MatSnackBarModule} from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 @NgModule({
   imports: [
     TranslateModule,

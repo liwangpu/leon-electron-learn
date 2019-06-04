@@ -11,7 +11,7 @@ import { TranslateService } from '@ngx-translate/core';
 export class AppComponent {
 
   _maxWindowState = false;
-  constructor(private translateSrv: TranslateService, private cacheSrv: AppCacheService, protected browserWinSrv: BrowserWindowService) {
+  constructor(private translateSrv: TranslateService, private cacheSrv: AppCacheService, public browserWinSrv: BrowserWindowService) {
 
     let lastLanguage = this.cacheSrv.lastLanguage;
     if (lastLanguage) {
