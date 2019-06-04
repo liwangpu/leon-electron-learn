@@ -38,13 +38,18 @@ class AssetDependency {
 export class AssetUploaderComponent implements OnInit {
 
   _projectDir = "";
-  // _allAssetDataMap: DataMap[] = [];
+  _allAssetDataMap: DataMap[] = [];
   constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService) {
 
   }//constructor
 
   ngOnInit() {
-
+    // for (let idx = 1; idx <= 100; idx++) {
+    //   let it = new DataMap();
+    //   it.package = `Package ${idx}`;
+    //   it.name = `Name ${idx}`;
+    //   this._allAssetDataMap.push(it);
+    // }
   }//ngOnInit
 
   test() {
@@ -56,29 +61,17 @@ export class AssetUploaderComponent implements OnInit {
     let dirs = this.electDialogSrv.showOpenDialog({ properties: ['openDirectory'] });
     if (!dirs || dirs.length == 0) return;
     this._projectDir = dirs[0];
-    // console.log(1, this._projectDir);
-    // let projectFolderName=
     let sdx = this._projectDir.lastIndexOf(path.sep);
     let projectFolderName = this._projectDir.slice(sdx + 1, this._projectDir.length);
-    // console.log('a', projectFolderName);
 
-    let assetListPath = path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt");
-    // fs.exists(assetListPath, exist => {
-    //   if (!exist) {
-    //     this.messageSrv.message("message.cannotFindAssetListFile");
-    //     return;
-    //   };
-    //   this.analyzeAssetFromConfig(assetListPath);
-    // });
-
-    let checkAssetListFile = () => {
+    let checkAssetListFile = (configPath: string) => {
       return new Promise((res, rej) => {
-        fs.exists(assetListPath, exist => {
+        fs.exists(configPath, exist => {
           if (!exist) {
             rej("message.cannotFindAssetListFile");
           }
           else
-            res(assetListPath);
+            res(configPath);
         });//exists
       });//Promise
     };//checkAssetListFile
@@ -91,30 +84,27 @@ export class AssetUploaderComponent implements OnInit {
             return;
           }
 
-          let allAssetDataMap = [];
           if (assetList.dataMap) {
             for (let k in assetList.dataMap) {
               let it = assetList.dataMap[k];
-              allAssetDataMap.push(it);
+              this._allAssetDataMap.push(it);
             }
           }//if
           if (assetList.dependencies) {
             for (let k in assetList.dependencies) {
               let it = assetList.dependencies[k];
-              allAssetDataMap.push(it);
+              this._allAssetDataMap.push(it);
             }
           }//if
-          res(allAssetDataMap);
+          res();
           // console.log(111, this._allAssetDataMap[1]);
         });//readJSON
       });//Promise
     };//analyzeAllAssetFromConfig
 
-    let calcFilesMd5 = (allFiles: DataMap[]) => {
-      // console.log(564, allFiles);
-
-      for (let i = allFiles.length - 1; i >= 0; i--) {
-        let it = allFiles[i];
+    let checkFilePathAndCalcFilesMd5 = () => {
+      for (let i = this._allAssetDataMap.length - 1; i >= 0; i--) {
+        let it = this._allAssetDataMap[i];
         if (!it.localPath) continue;
         //找到真实的文件路径
         let idx = it.localPath.indexOf(projectFolderName);
@@ -129,19 +119,23 @@ export class AssetUploaderComponent implements OnInit {
       }//for
 
 
-      console.log(564, allFiles);
-      // Promise.all(allFiles.map(it => {
-      //   return new Promise((innerRes, innerRej) => {
-      //     md5File(it.localPath, (err, hash) => {
-      //       if (err) {
-      //         innerRej(err);
-      //         return;
-      //       }
-
-      //       console.log('md5', err, hash);
-      //     });
-      //   });
-      // }));
+      return Promise.all(this._allAssetDataMap.map(it => {
+        return new Promise((res, rej) => {
+          md5File(it.localPath, (err, hash) => {
+            if (err) {
+              rej(err);
+              return;
+            }
+            for (let i = this._allAssetDataMap.length - 1; i >= 0; i--) {
+              let file = this._allAssetDataMap[i];
+              file._md5 = hash;
+            }
+            res();
+          });
+        });//Promise
+      })).then(() => {
+        return Promise.resolve();
+      });//all
 
       // console.log(11111, allFiles[2]);
       // md5File(it.localPath, (err, hash) => {
@@ -150,8 +144,9 @@ export class AssetUploaderComponent implements OnInit {
     };//calcFileMd5
     // console.log('assetListPath', assetListPath);
 
-    checkAssetListFile().then(analyzeAllAssetFromConfig).then(calcFilesMd5).then((res) => {
-      // console.log('res', res);
+    checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then(checkFilePathAndCalcFilesMd5).then((res) => {
+      console.log('res', res);
+
     });
   }//selectProjectDir
 
@@ -181,5 +176,7 @@ export class AssetUploaderComponent implements OnInit {
 
   // }//analyzeAssetFromConfig
 
-
+  identify(index: number, item: DataMap) {
+    return item.package;
+  }
 }

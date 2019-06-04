@@ -1,4 +1,6 @@
 div.container {
+    display: flex;
+    flex-flow: column;
     width: 100%;
     height: 100%;
 
@@ -23,5 +25,61 @@ div.container {
 
     }
 
-    div.content {}
+    div.content {
+        flex: 1 1 0;
+        display: flex;
+        flex-flow: column;
+        padding-top: .5rem;
+
+        div.asset-list {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: white;
+            table {
+                width: 100%;
+                min-width: 600px;
+                border-collapse: collapse;
+
+                th,
+                td {
+                    border-top: 1px solid #EEEEEE;
+                    border-bottom: 1px solid #EEEEEE;
+                    text-align: center;
+                    font-size: .8rem;
+                    font-weight: 300;
+                    padding: .4rem 0;
+                    background-color: white;
+                    word-break: break-all;
+                }
+
+                th {
+                    position: sticky;
+                    top: 0;
+                    z-index: 99;
+                    font-weight: 400;
+                    padding: .5rem 0;
+                }
+
+                th {
+                    &.no {
+                        width: 75px;
+                    }
+
+                    &.name {
+                        width: 120px;
+                    }
+
+                    &.type {
+                        width: 100px;
+                    }
+
+                    &.status {
+                        width: 100px;
+                    }
+                }
+
+            }
+        }
+    }
 }

@@ -4,6 +4,28 @@
     <input type="text" readonly='true' class="project-dir" (click)='selectProjectDir()' [value]='_projectDir'>
   </div>
   <div class="content">
-    <button (click)='test()'>测试</button>
+    <div class="asset-list">
+      <table>
+        <thead>
+          <tr>
+            <th class="no">序号</th>
+            <th>Package</th>
+            <th class="name">名称</th>
+            <th class="type">类型</th>
+            <th class="status">状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let it of _allAssetDataMap;let idx=index;trackBy:identify">
+            <td>{{idx+1}}</td>
+            <td>{{it.package}}</td>
+            <td>{{it.name}}</td>
+            <td>{{it.class}}</td>
+            <td>4</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- <button (click)='test()'>测试</button> -->
   </div>
 </div>
