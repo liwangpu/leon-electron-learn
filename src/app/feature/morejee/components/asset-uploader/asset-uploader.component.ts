@@ -3,13 +3,14 @@ import { ElectronDialogService, MessageCenterService, AppCacheService, FileHelpe
 import * as path from "path";
 import * as fs from 'fs';
 import * as fsExtra from "fs-extra";
-import * as md5File from "md5-file";
+import * as MD5 from "MD5";
 import { MatDialog } from '@angular/material/dialog';
 import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
 import { Subscription } from 'rxjs';
 import { FileassetService } from '@app/morejee-ms';
 import { HttpClient } from '@angular/common/http';
 import * as request from 'request';
+import { AssetUploaderMd5CacheService } from '../../services/asset-uploader-md5-cache.service';
 // import { SimpleConfirmDialogComponent } from '@app/shared';
 class AssetList {
   dataMap: { [key: string]: DataMap };
@@ -50,7 +51,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   _projectDir = "";
   _allAssetDataMap: DataMap[] = [];
   _uploadSubscription: Subscription;
-  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected httpClient: HttpClient) {
+  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected httpClient: HttpClient) {
 
   }//constructor
 
@@ -74,8 +75,14 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   }
 
   test() {
-    // let filePath = 'C:\\Users\\Leon\\Desktop\\400x300.png';
-
+    let filePath = 'C:\\Users\\Leon\\Desktop\\主观题作业.zip';
+    fs.readFile(filePath, (err, buff) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      console.log('md5', MD5(buff));
+    });
     // let rerr = request.post("http://192.168.99.100:9503/oss/files/stream", { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(filePath) } }, (err, res, body) => {
     //   console.log(111, err, res, body);
     // });
@@ -167,23 +174,28 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       }//for
 
 
-      return Promise.all(this._allAssetDataMap.map(it => {
-        return new Promise((res, rej) => {
-          md5File(it.localPath, (err, hash) => {
+      let allProArr = [];
+      this._allAssetDataMap.forEach((it, index) => {
+        allProArr.push(new Promise((res, rej) => {
+          fs.readFile(it.localPath, (err, buff) => {
             if (err) {
               rej(err);
               return;
             }
-            for (let i = this._allAssetDataMap.length - 1; i >= 0; i--) {
-              let file = this._allAssetDataMap[i];
-              file._md5 = hash;
+
+            let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.package);
+            console.log('get from cache',_md5);
+            if (!_md5) {
+              _md5 = MD5(buff); 
+              this.assetMd5CacheSrv.cacheMd5(it.package, _md5);
             }
+            this._allAssetDataMap[index]._md5 = _md5;
             res();
           });
-        });//Promise
-      })).then(() => {
-        return Promise.resolve();
-      });//all
+        }));
+      });//forEach
+
+      return Promise.all(allProArr);
     };//calcFileMd5
 
     let uploadSingleFiles = () => {
@@ -196,7 +208,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           // }); 
 
           let uploadReq = request.post(`${this.configSrv.server}/oss/files/stream`, { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(it.localPath) } }, (err, re, body) => {
-            console.log(111, err, re, body,it);
+            console.log(111, err, re, body, it);
             res();
           });
           fs.createReadStream(it.localPath).pipe(uploadReq);
@@ -212,8 +224,13 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     };//uploadSingleFiles
 
     checkFilePathAndCalcFilesMd5().then(uploadSingleFiles).then(() => {
-      console.log('上传完毕');
+      console.log('上传完毕', this._allAssetDataMap);
+      this._uploading = false;
     });
+
+    // checkFilePathAndCalcFilesMd5().then(uploadSingleFiles).then(() => {
+    //   console.log('上传完毕');
+    // });
 
   }//upload
 
