@@ -1,5 +1,6 @@
 export * from './core.module';
 //models
+export * from './models/file-helper';
 export * from './models/patch-operation';
 //services
 export * from './services/auth-interceptor.service';

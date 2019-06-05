@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ElectronDialogService, MessageCenterService } from '@app/core';
+import { ElectronDialogService, MessageCenterService, AppCacheService, FileHelper, AppConfigService } from '@app/core';
 import * as path from "path";
 import * as fs from 'fs';
 import * as fsExtra from "fs-extra";
@@ -8,6 +8,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
 import { Subscription } from 'rxjs';
 import { FileassetService } from '@app/morejee-ms';
+import { HttpClient } from '@angular/common/http';
+import * as request from 'request';
 // import { SimpleConfirmDialogComponent } from '@app/shared';
 class AssetList {
   dataMap: { [key: string]: DataMap };
@@ -48,7 +50,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   _projectDir = "";
   _allAssetDataMap: DataMap[] = [];
   _uploadSubscription: Subscription;
-  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService) {
+  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected httpClient: HttpClient) {
 
   }//constructor
 
@@ -62,9 +64,25 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     }
   }//ngOnDestroy
 
-  test() {
-    console.log('点我干嘛', new Date());
+  toArrayBuffer(buf) {
+    var ab = new ArrayBuffer(buf.length);
+    var view = new Uint8Array(ab);
+    for (var i = 0; i < buf.length; ++i) {
+      view[i] = buf[i];
+    }
+    return ab;
   }
+
+  test() {
+    // let filePath = 'C:\\Users\\Leon\\Desktop\\400x300.png';
+
+    // let rerr = request.post("http://192.168.99.100:9503/oss/files/stream", { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(filePath) } }, (err, res, body) => {
+    //   console.log(111, err, res, body);
+    // });
+    // fs.createReadStream(filePath).pipe(rerr);
+
+
+  }//test
 
   clearAssetList() {
     this._projectDir = "";
@@ -72,7 +90,6 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   }//clearAssetList
 
   selectProjectDir() {
-    // this.messageSrv.message("message.cannotFindAssetListFile",true);
 
     let dirs = this.electDialogSrv.showOpenDialog({ properties: ['openDirectory'] });
     if (!dirs || dirs.length == 0) return;
@@ -171,15 +188,23 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
     let uploadSingleFiles = () => {
       this._uploadingProcessStep = 2;
-      return Promise.all(this._allAssetDataMap.splice(0, 2).map(it => {
+      return Promise.all(this._allAssetDataMap.splice(0, 1).map(it => {
         return new Promise((res, rej) => {
           // let exitAsset = this.assetSrv.getById(it._md5);
           // this.assetSrv.getById(it._md5).subscribe(rs=>{
           //   console.log('uploadSingleFiles',rs);
+          // }); 
+
+          let uploadReq = request.post(`${this.configSrv.server}/oss/files/stream`, { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(it.localPath) } }, (err, re, body) => {
+            console.log(111, err, re, body,it);
+            res();
+          });
+          fs.createReadStream(it.localPath).pipe(uploadReq);
+
+
+          // this.assetSrv.checkFileExistByMd5(it._md5).subscribe(rs => {
+          //   console.log('check', rs);
           // });
-          this.assetSrv.checkFileExistByMd5(it._md5).subscribe(rs => {
-            console.log('check', rs);
-          })
         });//Promise
       })).then(() => {
         return Promise.resolve();
