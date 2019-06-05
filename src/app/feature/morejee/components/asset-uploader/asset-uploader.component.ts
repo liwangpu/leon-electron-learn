@@ -6,7 +6,6 @@ import * as fsExtra from "fs-extra";
 import * as MD5 from "MD5";
 import { MatDialog } from '@angular/material/dialog';
 import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
-import { Subscription } from 'rxjs';
 import { FileassetService } from '@app/morejee-ms';
 import { HttpClient } from '@angular/common/http';
 import * as request from 'request';
@@ -26,6 +25,7 @@ class DataMap {
   dependencies: { [key: string]: AssetDependency };
   _fileAssetId: string;
   _md5: string;
+  _modifiedTime: number;
 }
 
 class AssetDependency {
@@ -50,19 +50,20 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   _uploadingProcessStep = 0;
   _projectDir = "";
   _allAssetDataMap: DataMap[] = [];
-  _uploadSubscription: Subscription;
+  // _uploadSubscription: Subscription;
   constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected httpClient: HttpClient) {
 
   }//constructor
 
   ngOnInit() {
-
+    this.assetMd5CacheSrv.loadCacheFile();
   }//ngOnInit
 
   ngOnDestroy(): void {
-    if (this._uploadSubscription) {
-      this._uploadSubscription.unsubscribe();
-    }
+    this.assetMd5CacheSrv.persistCache2File();
+
+
+
   }//ngOnDestroy
 
   toArrayBuffer(buf) {
@@ -75,18 +76,18 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   }
 
   test() {
-    let filePath = 'C:\\Users\\Leon\\Desktop\\主观题作业.zip';
-    fs.readFile(filePath, (err, buff) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
-      console.log('md5', MD5(buff));
-    });
-    // let rerr = request.post("http://192.168.99.100:9503/oss/files/stream", { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(filePath) } }, (err, res, body) => {
-    //   console.log(111, err, res, body);
+    // let filePath = 'C:\\Users\\Leon\\Desktop\\主观题作业.zip';
+    // fs.readFile(filePath, (err, buff) => {
+    //   if (err) {
+    //     console.error(err);
+    //     return;
+    //   }
+    //   console.log('md5', MD5(buff));
     // });
-    // fs.createReadStream(filePath).pipe(rerr);
+    // // let rerr = request.post("http://192.168.99.100:9503/oss/files/stream", { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(filePath) } }, (err, res, body) => {
+    // //   console.log(111, err, res, body);
+    // // });
+    // // fs.createReadStream(filePath).pipe(rerr);
 
 
   }//test
@@ -146,17 +147,49 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     // console.log('assetListPath', assetListPath);
 
     checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then(() => {
-      console.log('res');
-
+      // console.log('res');
     });
   }//selectProjectDir
 
   upload() {
     this._uploading = true;
 
-
-    let checkFilePathAndCalcFilesMd5 = () => {
+    let checkFilePathAndStat = () => {
       this._uploadingProcessStep = 1;
+      let allProArr = [];
+      this._allAssetDataMap.forEach((it, index) => {
+        allProArr.push(new Promise((res, rej) => {
+          //找到真实的文件路径
+          let idx = it.localPath.indexOf(this._projectFolderName);
+          let tplocalStr = it.localPath.slice(idx + this._projectFolderName.length, it.localPath.length);
+          //不知道ue4那边对文件路径分隔符是什么,都尝试一下
+          let sep = '/';
+          if (tplocalStr.indexOf(sep) == -1)
+            sep = "\\";
+          let tarr = tplocalStr.split(sep);
+          let prjName = tarr.join(path.sep);
+          it.localPath = this._projectDir + prjName;
+          this._allAssetDataMap[index].localPath = it.localPath;
+          // 查看文件信息
+          if (!it._modifiedTime) {
+            fs.stat(it.localPath, (err, stat) => {
+              if (err) {
+                rej(err);
+              }
+              else {
+                this._allAssetDataMap[index]._modifiedTime = stat.mtime.getTime();
+                res();
+              }
+            });
+          }//if
+        }));//push
+      });//forEach
+      return Promise.all(allProArr);
+    };//checkFilePathAndStat
+
+
+    let calcFileMD5 = () => {
+      this._uploadingProcessStep = 2;
       for (let i = this._allAssetDataMap.length - 1; i >= 0; i--) {
         let it = this._allAssetDataMap[i];
         if (!it.localPath) continue;
@@ -183,11 +216,10 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               return;
             }
 
-            let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.package);
-            console.log('get from cache',_md5);
+            let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.package, it._modifiedTime);
             if (!_md5) {
-              _md5 = MD5(buff); 
-              this.assetMd5CacheSrv.cacheMd5(it.package, _md5);
+              _md5 = MD5(buff);
+              this.assetMd5CacheSrv.cacheMd5(it.package, _md5, it._modifiedTime);
             }
             this._allAssetDataMap[index]._md5 = _md5;
             res();
@@ -196,7 +228,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       });//forEach
 
       return Promise.all(allProArr);
-    };//calcFileMd5
+    };//calcFileMD5
 
     let uploadSingleFiles = () => {
       this._uploadingProcessStep = 2;
@@ -223,7 +255,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       });//all
     };//uploadSingleFiles
 
-    checkFilePathAndCalcFilesMd5().then(uploadSingleFiles).then(() => {
+    checkFilePathAndStat().then(calcFileMD5).then(() => {
       console.log('上传完毕', this._allAssetDataMap);
       this._uploading = false;
     });

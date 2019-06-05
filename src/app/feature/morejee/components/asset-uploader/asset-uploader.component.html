@@ -34,10 +34,11 @@
     <div class="upload-process" *ngIf='_uploading'>
       <mat-spinner></mat-spinner>
       <div class="msg">
-        <p [class.active]='_uploadingProcessStep==1'>计算MD5</p>
-        <p [class.active]='_uploadingProcessStep==2'>上传文件</p>
-        <p [class.active]='_uploadingProcessStep==3'>创建对象</p>
-        <p [class.active]='_uploadingProcessStep==4'>创建上传凭据</p>
+        <p [class.active]='_uploadingProcessStep==1'>收集文件信息</p>
+        <p [class.active]='_uploadingProcessStep==2'>计算MD5</p>
+        <p [class.active]='_uploadingProcessStep==3'>上传文件</p>
+        <p [class.active]='_uploadingProcessStep==4'>创建对象</p>
+        <p [class.active]='_uploadingProcessStep==5'>创建上传凭据</p>
       </div>
     </div>
   </div>

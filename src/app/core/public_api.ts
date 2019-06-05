@@ -15,3 +15,4 @@ export * from './services/local-store.service';
 export * from './services/message-center.service';
 export * from './services/auth-guard.service';
 export * from './services/app-config.service';
+export * from './services/file-reader-writer.service';

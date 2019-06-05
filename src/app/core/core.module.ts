@@ -10,6 +10,7 @@ import { MessageCenterService } from './services/message-center.service';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthGuardService } from './services/auth-guard.service';
 import { AppConfigService } from './services/app-config.service';
+import { FileReaderWriterService } from './services/file-reader-writer.service';
 @NgModule({
   imports: [
     TranslateModule,
@@ -24,6 +25,7 @@ import { AppConfigService } from './services/app-config.service';
     AppCacheService,
     LocalStoreService,
     AppConfigService,
+    FileReaderWriterService,
     MessageCenterService
   ]
 })
