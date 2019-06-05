@@ -2,9 +2,11 @@
   <div class="header">
     <p class="label">项目地址：</p>
     <input type="text" readonly='true' class="project-dir" [value]='_projectDir'>
-    <button class="normal clear ml" mat-stroked-button (click)='clearAssetList()'>清空</button>
-    <button class="normal ml" mat-stroked-button (click)='selectProjectDir()'>选择</button>
-    <button class="normal ml" mat-stroked-button>上传</button>
+    <button class="normal clear ml" [class.hide]='!_projectDir' [class.disabled]='!_projectDir||_uploading'
+      [disabled]='!_projectDir||_uploading' mat-stroked-button (click)='clearAssetList()'>清空</button>
+    <button class="normal ml" [disabled]='_uploading' mat-stroked-button (click)='selectProjectDir()'>选择</button>
+    <button class="normal ml" [disabled]='_uploading' mat-stroked-button (click)='upload()'>上传</button>
+    <button class="normal ml clear"  [class.hide]='!_uploading' mat-stroked-button (click)='cancelUpload()'>取消上传</button>
   </div>
   <div class="content">
     <div class="asset-list">
@@ -12,7 +14,7 @@
         <thead>
           <tr>
             <th class="no">序号</th>
-            <th>Package</th>
+            <th>包名</th>
             <th class="name">名称</th>
             <th class="type">类型</th>
             <th class="status">状态</th>
@@ -21,9 +23,9 @@
         <tbody>
           <tr *ngFor="let it of _allAssetDataMap;let idx=index;trackBy:identify">
             <td>{{idx+1}}</td>
-            <td>{{it.package}}</td>
-            <td>{{it.name}}</td>
-            <td>{{it.class}}</td>
+            <td class="lj">{{it.package}}</td>
+            <td class="lj">{{it.name}}</td>
+            <td class="lj">{{it.class}}</td>
             <td>4</td>
           </tr>
         </tbody>

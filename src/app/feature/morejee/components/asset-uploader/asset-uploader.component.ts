@@ -37,6 +37,7 @@ class AssetDependency {
 })
 export class AssetUploaderComponent implements OnInit {
 
+  _uploading = false;
   _projectDir = "";
   _allAssetDataMap: DataMap[] = [];
   constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService) {
@@ -150,11 +151,19 @@ export class AssetUploaderComponent implements OnInit {
     };//calcFileMd5
     // console.log('assetListPath', assetListPath);
 
-    checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then(checkFilePathAndCalcFilesMd5).then((res) => {
+    checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then((res) => {
       console.log('res', res);
 
     });
   }//selectProjectDir
+
+  upload() {
+    this._uploading = true;
+  }//upload
+
+  cancelUpload() {
+    this._uploading = false;
+  }//cancelUpload
 
   // analyzeAssetFromConfig(assetListPath: string) {
   //   fsExtra.readJSON(assetListPath, { encoding: 'utf8' }, (err, assetList: AssetList) => {
@@ -182,7 +191,11 @@ export class AssetUploaderComponent implements OnInit {
 
   // }//analyzeAssetFromConfig
 
+  confirmLeaveUploader() {
+    alert('你要干嘛');
+  }//confirmLeaveUploader
+
   identify(index: number, item: DataMap) {
     return item.package;
-  }
+  }//identify
 }
