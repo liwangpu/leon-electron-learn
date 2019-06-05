@@ -81,7 +81,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     //   if (err) {
     //     console.error(err);
     //     return;
-    //   }
+    //   } 
     //   console.log('md5', MD5(buff));
     // });
     // // let rerr = request.post("http://192.168.99.100:9503/oss/files/stream", { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(filePath) } }, (err, res, body) => {
@@ -147,7 +147,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     // console.log('assetListPath', assetListPath);
 
     checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then(() => {
-      // console.log('res');
+      // console.log('res'); 
     });
   }//selectProjectDir
 
@@ -182,6 +182,9 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               }
             });
           }//if
+          else {
+            res();
+          }
         }));//push
       });//forEach
       return Promise.all(allProArr);
@@ -217,6 +220,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
             }
 
             let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.package, it._modifiedTime);
+            // console.log(111,_md5);
             if (!_md5) {
               _md5 = MD5(buff);
               this.assetMd5CacheSrv.cacheMd5(it.package, _md5, it._modifiedTime);
@@ -258,6 +262,9 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     checkFilePathAndStat().then(calcFileMD5).then(() => {
       console.log('上传完毕', this._allAssetDataMap);
       this._uploading = false;
+      this.assetMd5CacheSrv.persistCache2File();
+    }, err => {
+      console.error('err:', err);
     });
 
     // checkFilePathAndCalcFilesMd5().then(uploadSingleFiles).then(() => {
