@@ -7,6 +7,7 @@ import * as md5File from "md5-file";
 import { MatDialog } from '@angular/material/dialog';
 import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
 import { Subscription } from 'rxjs';
+import { FileassetService } from '@app/morejee-ms';
 // import { SimpleConfirmDialogComponent } from '@app/shared';
 class AssetList {
   dataMap: { [key: string]: DataMap };
@@ -41,13 +42,13 @@ class AssetDependency {
 })
 export class AssetUploaderComponent implements OnInit, OnDestroy {
 
-
+  private _projectFolderName: string;
   _uploading = false;
   _uploadingProcessStep = 0;
   _projectDir = "";
   _allAssetDataMap: DataMap[] = [];
   _uploadSubscription: Subscription;
-  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog) {
+  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService) {
 
   }//constructor
 
@@ -77,7 +78,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     if (!dirs || dirs.length == 0) return;
     this._projectDir = dirs[0];
     let sdx = this._projectDir.lastIndexOf(path.sep);
-    let projectFolderName = this._projectDir.slice(sdx + 1, this._projectDir.length);
+    this._projectFolderName = this._projectDir.slice(sdx + 1, this._projectDir.length);
 
     let checkAssetListFile = (configPath: string) => {
       return new Promise((res, rej) => {
@@ -117,13 +118,28 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       });//Promise
     };//analyzeAllAssetFromConfig
 
+
+    // console.log('assetListPath', assetListPath);
+
+    checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then(() => {
+      console.log('res');
+
+    });
+  }//selectProjectDir
+
+  upload() {
+    this._uploading = true;
+
+
     let checkFilePathAndCalcFilesMd5 = () => {
+      this._uploadingProcessStep = 1;
       for (let i = this._allAssetDataMap.length - 1; i >= 0; i--) {
         let it = this._allAssetDataMap[i];
         if (!it.localPath) continue;
+        if (it._md5) continue;
         //找到真实的文件路径
-        let idx = it.localPath.indexOf(projectFolderName);
-        let tplocalStr = it.localPath.slice(idx + projectFolderName.length, it.localPath.length);
+        let idx = it.localPath.indexOf(this._projectFolderName);
+        let tplocalStr = it.localPath.slice(idx + this._projectFolderName.length, it.localPath.length);
         //不知道ue4那边对文件路径分隔符是什么,都尝试一下
         let sep = '/';
         if (tplocalStr.indexOf(sep) == -1)
@@ -151,30 +167,29 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       })).then(() => {
         return Promise.resolve();
       });//all
-
-      // console.log(11111, allFiles[2]);
-      // md5File(it.localPath, (err, hash) => {
-      //   console.log('md5', err, hash);
-      // });
     };//calcFileMd5
-    // console.log('assetListPath', assetListPath);
 
-    checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then(() => {
-      console.log('res');
+    let uploadSingleFiles = () => {
+      this._uploadingProcessStep = 2;
+      return Promise.all(this._allAssetDataMap.splice(0, 2).map(it => {
+        return new Promise((res, rej) => {
+          // let exitAsset = this.assetSrv.getById(it._md5);
+          // this.assetSrv.getById(it._md5).subscribe(rs=>{
+          //   console.log('uploadSingleFiles',rs);
+          // });
+          this.assetSrv.checkFileExistByMd5(it._md5).subscribe(rs => {
+            console.log('check', rs);
+          })
+        });//Promise
+      })).then(() => {
+        return Promise.resolve();
+      });//all
+    };//uploadSingleFiles
 
+    checkFilePathAndCalcFilesMd5().then(uploadSingleFiles).then(() => {
+      console.log('上传完毕');
     });
-  }//selectProjectDir
 
-  upload() {
-    this._uploading = true;
-
-
-
-
-
-
-
-    
   }//upload
 
   // cancelUpload() {

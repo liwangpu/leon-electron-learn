@@ -25,6 +25,9 @@
       "@app/core": [
         "src/app/core/public_api"
       ],
+      "@app/morejee-ms": [
+        "src/app/feature/morejee-ms/public_api"
+      ],
       "@app/shared": [
         "src/app/shared/public_api"
       ]

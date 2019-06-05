@@ -9,6 +9,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { MessageCenterService } from './services/message-center.service';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthGuardService } from './services/auth-guard.service';
+import { AppConfigService } from './services/app-config.service';
 @NgModule({
   imports: [
     TranslateModule,
@@ -22,6 +23,7 @@ import { AuthGuardService } from './services/auth-guard.service';
     DragDropOpsatService,
     AppCacheService,
     LocalStoreService,
+    AppConfigService,
     MessageCenterService
   ]
 })

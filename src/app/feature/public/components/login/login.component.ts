@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AppCacheService } from '@app/core';
+import { AppCacheService, AppConfigService } from '@app/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Md5 } from 'ts-md5';
 
@@ -41,6 +41,7 @@ export class LoginComponent implements OnInit {
     this.httpClient.post<{ token: string, expires: string }>(`${data.server}/basic/tokens`, data, { headers: header }).subscribe(res => {
       this.cacheSrv.tokenExpires = res.expires;
       this.cacheSrv.token = res.token;
+      this.cacheSrv.server = data.server;
       if (!this.rememberLogin) {
         data.password = '';
       }
@@ -48,7 +49,7 @@ export class LoginComponent implements OnInit {
         data.password = unMd5Password;
       }
       this.cacheSrv.lastLoginAccount = JSON.stringify(data);
-        this.router.navigateByUrl(this.returnUrl);
+      this.router.navigateByUrl(this.returnUrl);
     });
   }//login
 

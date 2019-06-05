@@ -15,12 +15,14 @@ import { AssetUploaderCandeactiveService } from './services/asset-uploader-cande
 import { SimpleConfirmDialogComponent } from './components/simple-confirm-dialog/simple-confirm-dialog.component';
 import { SimpleMessageDialogComponent } from './components/simple-message-dialog/simple-message-dialog.component';
 import { SetupComponent } from './components/setup/setup.component';
+import { MorejeeMsModule } from '@app/morejee-ms';
 
 
 @NgModule({
   declarations: [AssetUploaderComponent, TextureToMaterialComponent, SimpleConfirmDialogComponent, SimpleMessageDialogComponent, SetupComponent],
   imports: [
     CommonModule,
+    MorejeeMsModule,
     TranslateModule,
     ReactiveFormsModule,
     MatButtonModule,
