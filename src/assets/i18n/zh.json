@@ -1,7 +1,8 @@
 {
     "message": {
-        "cannotFindAssetListFile": "没有在目录下发现\\Saved\\AssetMan\\assetlist.txt，请确认是否选中项目目录或者文件是否存在",
-        "cancelThenDeleteAllAssetList": "取消上传操作会撤回刚刚上传的所有资源信息，您确认取消上传吗？"
+        "cannotFindAssetListFile": "没有在目录下发现\\Saved\\AssetMan\\assetlist.txt，请确认是否选中项目目录或者文件是否存在！",
+        "cancelThenDeleteAllAssetList": "取消上传操作会撤回刚刚上传的所有资源信息，您确认取消上传吗？",
+        "cancelUploadingBeforeLeaving": "正在上传资源信息，请耐心等待上传完毕或先取消上传！"
     },
     "button": {
         "new": "新建",

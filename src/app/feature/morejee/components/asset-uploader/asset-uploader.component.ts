@@ -6,6 +6,7 @@ import * as fsExtra from "fs-extra";
 import * as md5File from "md5-file";
 import { MatDialog } from '@angular/material/dialog';
 import { SimpleConfirmDialogComponent } from '../simple-confirm-dialog/simple-confirm-dialog.component';
+import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
 // import { SimpleConfirmDialogComponent } from '@app/shared';
 class AssetList {
   dataMap: { [key: string]: DataMap };
@@ -196,7 +197,7 @@ export class AssetUploaderComponent implements OnInit {
   // }//analyzeAssetFromConfig
 
   confirmLeaveUploader() {
-    alert('你要干嘛');
+    this.dialogSrv.open(SimpleMessageDialogComponent, { width: '300px', height: '250px', data: { message: 'message.cancelUploadingBeforeLeaving' } });
   }//confirmLeaveUploader
 
   identify(index: number, item: DataMap) {

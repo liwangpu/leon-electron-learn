@@ -12,10 +12,11 @@ import { AssetUploaderComponent } from './components/asset-uploader/asset-upload
 import { TextureToMaterialComponent } from './components/texture-to-material/texture-to-material.component';
 import { AssetUploaderCandeactiveService } from './services/asset-uploader-candeactive.service';
 import { SimpleConfirmDialogComponent } from './components/simple-confirm-dialog/simple-confirm-dialog.component';
+import { SimpleMessageDialogComponent } from './components/simple-message-dialog/simple-message-dialog.component';
 
 
 @NgModule({
-  declarations: [AssetUploaderComponent, TextureToMaterialComponent, SimpleConfirmDialogComponent],
+  declarations: [AssetUploaderComponent, TextureToMaterialComponent, SimpleConfirmDialogComponent, SimpleMessageDialogComponent],
   imports: [
     CommonModule,
     TranslateModule,
@@ -30,7 +31,8 @@ import { SimpleConfirmDialogComponent } from './components/simple-confirm-dialog
     AssetUploaderCandeactiveService
   ],
   entryComponents: [
-    SimpleConfirmDialogComponent
+    SimpleConfirmDialogComponent,
+    SimpleMessageDialogComponent
   ]
 })
 export class MorejeeModule { }
