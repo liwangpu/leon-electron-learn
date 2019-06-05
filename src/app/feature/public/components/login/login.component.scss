@@ -1,0 +1,151 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  div.page {
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    background-color: #f4f6f9;
+    padding: 0 1.5rem;
+    box-sizing: border-box;
+
+    img.logo {
+      display: inline-block;
+      width: 11.25rem;
+      height: 7rem;
+      margin-bottom: 2rem;
+    }
+
+    form {
+      display: block;
+      width: 100%;
+    }
+
+    div.form-container {
+      width: 100%;
+      min-height: 20.9375rem;
+      border: 1px solid rgb(216, 221, 230);
+      border-radius: 0.25rem;
+      padding: 1.25em;
+      box-sizing: border-box;
+      display: flex;
+      flex-flow: column;
+      justify-content: space-around;
+      align-items: flex-start;
+      background-color: #ffffff;
+      font-family: "Roboto";
+      font-weight: 400;
+
+      .login-form {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      & span {
+        font-size: 0.75rem;
+        color: #54698d;
+      }
+
+      input.input-ct {
+        width: 100%;
+        height: 2.625rem;
+        border: 1px solid #d8dde6;
+        border-radius: 0.25rem;
+        font-size: 1.125rem;
+        padding: 0 0.75rem;
+        box-sizing: border-box;
+        background-color: white;
+
+        &:focus {
+          background-color: #ffffff;
+          border: 1px solid #1589ee;
+          outline: 0;
+          box-shadow: 0 0 0.1875rem #0070d2;
+        }
+      }
+
+      button.login-btn-ct {
+        width: 100%;
+        height: 2.625rem;
+        margin-top: .5rem;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+        background-color: #1c7ec3;
+        color: white;
+
+        &:hover {
+          cursor: pointer;
+          background-color: #0070d2;
+        }
+      }
+
+      div.remember-wrap {
+        display: flex;
+        justify-content: flex-start;
+        align-content: center;
+
+        & > label {
+          display: inline-block;
+          padding-left: 0.5rem;
+          font-size: 0.75rem;
+        }
+      }
+
+      div.pwd-op-container {
+        width: 100%;
+        border-top: 1px solid rgb(216, 221, 230);
+        padding-top: 0.5rem;
+        box-sizing: border-box;
+
+        & > a {
+          color: #0070d2;
+          text-decoration: none;
+          font-size: 0.75rem;
+          margin: 0;
+          padding: 0;
+
+          &:link,
+          &:active,
+          &:hover,
+          &:visited {
+            text-decoration: none;
+            color: #0070d2;
+          }
+        }
+      }
+
+      span.login-tip {
+        display: block;
+        color: #c23934;
+        box-sizing: border-box;
+      }
+
+      .disable-login {
+        background-color: #e3e3e3 !important;
+
+        &:hover {
+          cursor: not-allowed !important;
+        }
+      }
+    }
+  }
+
+  @media screen and (min-width: 500px) {
+    div.page {
+      form {
+        width: auto;
+        height: auto;
+      }
+
+      div.form-container {
+        width: 23.75rem;
+      }
+    }
+  }
+}

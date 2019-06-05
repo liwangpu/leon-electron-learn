@@ -8,6 +8,7 @@ import { LocalStoreService } from './services/local-store.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { MessageCenterService } from './services/message-center.service';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { AuthGuardService } from './services/auth-guard.service';
 @NgModule({
   imports: [
     TranslateModule,
@@ -15,6 +16,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
   ],
   providers: [
     ElectronService,
+    AuthGuardService,
     BrowserWindowService,
     ElectronDialogService,
     DragDropOpsatService,

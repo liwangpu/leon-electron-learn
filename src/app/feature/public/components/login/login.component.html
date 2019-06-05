@@ -1,0 +1,22 @@
+<div class="page">
+  <img class="logo" src="assets/images/logo/dmz-cloud.png">
+  <form name="loginForm" [formGroup]="loginForm" autocomplete="off">
+    <div class="form-container">
+      <span>{{'glossary.server'|translate}}</span>
+      <input type="text" class="input-ct" name="server" formControlName="server">
+      <span>{{'glossary.userName'|translate}}</span>
+      <input type="text" class="input-ct" name="username" autocomplete="username email" formControlName="username">
+      <span>{{'glossary.password'|translate}}</span>
+      <input type="password" class="input-ct" name="password" formControlName="password" autocomplete="new-password">
+      <button class="login-btn-ct" (click)='login()'>{{'button.login'|translate}}</button>
+      <div class="remember-wrap">
+        <input type="checkbox" id="remember-me-ct" [checked]='rememberLogin' (change)="rememberLogin = !rememberLogin">
+        <label for="remember-me-ct">{{'button.rememberMe'|translate}}</label>
+      </div>
+      <span class="login-tip" *ngIf='loginError'>{{loginMsg|translate}}</span>
+      <div class="pwd-op-container">
+        <a href="#">{{'button.forgotPassword'|translate}}</a>
+      </div>
+    </div>
+  </form>
+</div>

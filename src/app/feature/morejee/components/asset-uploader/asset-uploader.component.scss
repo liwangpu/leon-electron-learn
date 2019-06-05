@@ -31,7 +31,7 @@ div.container {
       &:hover {
         cursor: pointer;
       }
-      
+
       &.clear {
         &:hover {
           color: white;
@@ -53,6 +53,7 @@ div.container {
   }
 
   div.content {
+    position: relative;
     flex: 1 1 0;
     display: flex;
     flex-flow: column;
@@ -107,6 +108,29 @@ div.container {
 
           &.status {
             width: 100px;
+          }
+        }
+      }
+    }
+
+    div.upload-process {
+      position: absolute;
+      display: flex;
+      flex-flow: column;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      z-index: 999;
+      background-color: rgba(245,245,245, .6);
+      div.msg {
+        padding-top: 0.5rem;
+        p {
+          padding-top: 0.3rem;
+          font-size: 0.8rem;
+          color: rgba(0, 0, 0, 0.26);
+          &.active{
+            color: black;
           }
         }
       }

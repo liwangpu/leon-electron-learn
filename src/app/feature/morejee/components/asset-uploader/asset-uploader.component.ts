@@ -1,12 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ElectronDialogService, MessageCenterService } from '@app/core';
 import * as path from "path";
 import * as fs from 'fs';
 import * as fsExtra from "fs-extra";
 import * as md5File from "md5-file";
 import { MatDialog } from '@angular/material/dialog';
-import { SimpleConfirmDialogComponent } from '../simple-confirm-dialog/simple-confirm-dialog.component';
 import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
+import { Subscription } from 'rxjs';
 // import { SimpleConfirmDialogComponent } from '@app/shared';
 class AssetList {
   dataMap: { [key: string]: DataMap };
@@ -39,23 +39,27 @@ class AssetDependency {
   templateUrl: './asset-uploader.component.html',
   styleUrls: ['./asset-uploader.component.scss']
 })
-export class AssetUploaderComponent implements OnInit {
+export class AssetUploaderComponent implements OnInit, OnDestroy {
+
 
   _uploading = false;
+  _uploadingProcessStep = 0;
   _projectDir = "";
   _allAssetDataMap: DataMap[] = [];
+  _uploadSubscription: Subscription;
   constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog) {
 
   }//constructor
 
   ngOnInit() {
-    // for (let idx = 1; idx <= 100; idx++) {
-    //   let it = new DataMap();
-    //   it.package = `Package ${idx}`;
-    //   it.name = `Name ${idx}`;
-    //   this._allAssetDataMap.push(it);
-    // }
+
   }//ngOnInit
+
+  ngOnDestroy(): void {
+    if (this._uploadSubscription) {
+      this._uploadSubscription.unsubscribe();
+    }
+  }//ngOnDestroy
 
   test() {
     console.log('点我干嘛', new Date());
@@ -155,20 +159,28 @@ export class AssetUploaderComponent implements OnInit {
     };//calcFileMd5
     // console.log('assetListPath', assetListPath);
 
-    checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then((res) => {
-      console.log('res', res);
+    checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then(() => {
+      console.log('res');
 
     });
   }//selectProjectDir
 
   upload() {
     this._uploading = true;
+
+
+
+
+
+
+
+    
   }//upload
 
-  cancelUpload() {
-    this._uploading = false;
-    this.dialogSrv.open(SimpleConfirmDialogComponent, { width: '300px', height: '250px', data: { message: 'message.cancelThenDeleteAllAssetList' } });
-  }//cancelUpload
+  // cancelUpload() {
+  //   this._uploading = false;
+  //   this.dialogSrv.open(SimpleConfirmDialogComponent, { width: '300px', height: '250px', data: { message: 'message.cancelThenDeleteAllAssetList' } });
+  // }//cancelUpload
 
   // analyzeAssetFromConfig(assetListPath: string) {
   //   fsExtra.readJSON(assetListPath, { encoding: 'utf8' }, (err, assetList: AssetList) => {
@@ -197,7 +209,7 @@ export class AssetUploaderComponent implements OnInit {
   // }//analyzeAssetFromConfig
 
   confirmLeaveUploader() {
-    this.dialogSrv.open(SimpleMessageDialogComponent, { width: '300px', height: '250px', data: { message: 'message.cancelUploadingBeforeLeaving' } });
+    this.dialogSrv.open(SimpleMessageDialogComponent, { width: '300px', height: '250px', data: { message: 'message.waitTilFinishUploadingBeforeLeaving' } });
   }//confirmLeaveUploader
 
   identify(index: number, item: DataMap) {

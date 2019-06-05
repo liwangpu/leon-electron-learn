@@ -3,6 +3,7 @@ import { Routes, RouterModule } from '@angular/router';
 import { AssetUploaderComponent } from './components/asset-uploader/asset-uploader.component';
 import { TextureToMaterialComponent } from './components/texture-to-material/texture-to-material.component';
 import { AssetUploaderCandeactiveService } from './services/asset-uploader-candeactive.service';
+import { SetupComponent } from './components/setup/setup.component';
 
 
 const routes: Routes = [
@@ -14,6 +15,10 @@ const routes: Routes = [
   , {
     path: 'texture-to-material',
     component: TextureToMaterialComponent
+  }
+  , {
+    path: 'setup',
+    component: SetupComponent
   }
   , { path: '**', redirectTo: '' }
 ];

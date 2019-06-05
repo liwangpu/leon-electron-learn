@@ -7,16 +7,18 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MorejeeRoutingModule } from './morejee-routing.module';
 import { AssetUploaderComponent } from './components/asset-uploader/asset-uploader.component';
 import { TextureToMaterialComponent } from './components/texture-to-material/texture-to-material.component';
 import { AssetUploaderCandeactiveService } from './services/asset-uploader-candeactive.service';
 import { SimpleConfirmDialogComponent } from './components/simple-confirm-dialog/simple-confirm-dialog.component';
 import { SimpleMessageDialogComponent } from './components/simple-message-dialog/simple-message-dialog.component';
+import { SetupComponent } from './components/setup/setup.component';
 
 
 @NgModule({
-  declarations: [AssetUploaderComponent, TextureToMaterialComponent, SimpleConfirmDialogComponent, SimpleMessageDialogComponent],
+  declarations: [AssetUploaderComponent, TextureToMaterialComponent, SimpleConfirmDialogComponent, SimpleMessageDialogComponent, SetupComponent],
   imports: [
     CommonModule,
     TranslateModule,
@@ -25,6 +27,7 @@ import { SimpleMessageDialogComponent } from './components/simple-message-dialog
     MatSnackBarModule,
     MatIconModule,
     MatDialogModule,
+    MatProgressSpinnerModule,
     MorejeeRoutingModule
   ],
   providers: [

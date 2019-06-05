@@ -6,7 +6,7 @@
       [disabled]='!_projectDir||_uploading' mat-stroked-button (click)='clearAssetList()'>清空</button>
     <button class="normal ml" [disabled]='_uploading' mat-stroked-button (click)='selectProjectDir()'>选择</button>
     <button class="normal ml" [disabled]='_uploading' mat-stroked-button (click)='upload()'>上传</button>
-    <button class="normal ml clear"  [class.hide]='!_uploading' mat-stroked-button (click)='cancelUpload()'>取消上传</button>
+    <!-- <button class="normal ml clear" [class.hide]='!_uploading' mat-stroked-button (click)='cancelUpload()'>取消上传</button> -->
   </div>
   <div class="content">
     <div class="asset-list">
@@ -31,9 +31,18 @@
         </tbody>
       </table>
     </div>
-    <!-- <button (click)='test()'>测试</button> -->
+    <div class="upload-process" *ngIf='_uploading'>
+      <mat-spinner></mat-spinner>
+      <div class="msg">
+        <p [class.active]='_uploadingProcessStep==1'>计算MD5</p>
+        <p [class.active]='_uploadingProcessStep==2'>上传文件</p>
+        <p [class.active]='_uploadingProcessStep==3'>创建对象</p>
+        <p [class.active]='_uploadingProcessStep==4'>创建上传凭据</p>
+      </div>
+    </div>
   </div>
   <div class="footer">
-    <p class="process">进度：0/149</p>
+    <p class="process" *ngIf='_allAssetDataMap&&_allAssetDataMap.length>0'>
+      {{'glossary.count'|translate}}：{{_allAssetDataMap?.length}}</p>
   </div>
 </div>
