@@ -1,7 +1,35 @@
 {
-  "PAGES": {
-      "HOME": {
-          "TITLE": "App works !"
-      }
+  "message": {
+    "cannotFindAssetListFile": "没有在目录下发现\\Saved\\AssetMan\\assetlist.txt,请确认是否选中项目目录或者文件是否存在",
+    "cancelThenDeleteAllAssetList": "取消上传操作会撤回刚刚上传的所有资源信息,您确认取消上传吗？"
+  },
+  "button": {
+    "new": "New",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "undo": "Undo",
+    "clear": "Clear",
+    "import": "Import",
+    "export": "Export",
+    "search": "Search",
+    "confirm": "Confirm",
+    "refresh": "Refresh",
+    "filter": "Filter",
+    "delete": "Delete",
+    "resetPasssword": "Reset Passsword",
+    "login": "Login",
+    "logout": "Logout",
+    "rememberMe": "Remember Me",
+    "forgotPassword": "Forgot Your Password?",
+    "addChildCategory": "Add Child Category",
+    "moveUp": "Move Up",
+    "moveDown": "Move Down",
+    "changeHierarchy": "Change Hierarchy",
+    "goBack": "Go Back"
+  },
+  "dialog": {
+    "advancedSearch": "Advanced Search",
+    "warmPrompt": "Warm Prompt"
   }
 }

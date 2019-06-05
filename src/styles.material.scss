@@ -1,16 +1,14 @@
-// .cdk-global-overlay-wrapper,
-// .cdk-overlay-container {
-//   height: 100%;
-// }
+//dialog
+.mat-dialog-container {
+  padding: 0 !important;
+}
 
-// div.cdk-overlay-container {
-//   div.cdk-global-overlay-wrapper {
-//     div.cdk-overlay-pane {
-//       position: absolute;
-//       bottom: 0;
-//       left: 0;
-//       right: 0;
-//       margin: auto;
-//     }
-//   }
-// }
+button.mat-stroked-button {
+  &.normal {
+    line-height: 25px;
+    font-size: 0.8rem;
+    padding: 0 10px;
+    min-width: 40px;
+    border-radius: 2px;
+  }
+}

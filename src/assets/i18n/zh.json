@@ -1,5 +1,35 @@
 {
     "message": {
-        "cannotFindAssetListFile": "没有在目录下发现\\Saved\\AssetMan\\assetlist.txt,请确认是否选中项目目录或者文件是否存在"
+        "cannotFindAssetListFile": "没有在目录下发现\\Saved\\AssetMan\\assetlist.txt，请确认是否选中项目目录或者文件是否存在",
+        "cancelThenDeleteAllAssetList": "取消上传操作会撤回刚刚上传的所有资源信息，您确认取消上传吗？"
+    },
+    "button": {
+        "new": "新建",
+        "edit": "编辑",
+        "save": "保存",
+        "undo": "撤销",
+        "cancel": "取消",
+        "clear": "清除",
+        "import": "导入",
+        "export": "导出",
+        "search": "搜索",
+        "confirm": "确认",
+        "refresh": "刷新",
+        "filter": "过滤",
+        "delete": "删除",
+        "resetPasssword": "重置密码",
+        "login": "登录",
+        "logout": "注销",
+        "rememberMe": "记住我",
+        "forgotPassword": "忘记您的密码?",
+        "addChildCategory": "添加子分类",
+        "moveUp": "上移",
+        "moveDown": "下移",
+        "changeHierarchy": "改变层级",
+        "goBack": "返回"
+    },
+    "dialog": {
+        "advancedSearch": "高级搜索",
+        "warmPrompt": "温馨提示"
     }
 }

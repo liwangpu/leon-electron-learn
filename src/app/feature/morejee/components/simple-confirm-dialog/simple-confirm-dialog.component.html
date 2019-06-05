@@ -1,0 +1,15 @@
+<div class="cus-dialog">
+  <div class="header">
+    <p class="title">{{'dialog.warmPrompt'|translate}}</p>
+    <button mat-icon-button (click)='dialogRef.close()'>
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <div class="content">
+    <p class="message">{{message|translate}}</p>
+  </div>
+  <div class="footer">
+    <p class="btn" (click)='dialogRef.close()'>{{"button.cancel"|translate}}</p>
+    <p class="btn confirm" (click)='_onConfirm()'>{{"button.confirm"|translate}}</p>
+  </div>
+</div>
