@@ -21,11 +21,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let it of _allAssetDataMap;let idx=index;trackBy:identify">
+          <tr *ngFor="let ky of allAsset|keyvalue;let idx=index;">
             <td>{{idx+1}}</td>
-            <td class="lj">{{it.package}}</td>
-            <td class="lj">{{it.name}}</td>
-            <td class="lj">{{it.class}}</td>
+            <td class="lj">{{ky.key}}</td>
+            <td class="lj">{{ky.value.name}}</td>
+            <td class="lj">{{ky.value.class}}</td>
             <td>4</td>
           </tr>
         </tbody>

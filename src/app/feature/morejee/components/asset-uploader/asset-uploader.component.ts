@@ -9,6 +9,7 @@ import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-me
 import { FileassetService } from '@app/morejee-ms';
 import { HttpClient } from '@angular/common/http';
 import * as request from 'request';
+import * as promiseLimit from 'promise-limit';
 import { AssetUploaderMd5CacheService } from '../../services/asset-uploader-md5-cache.service';
 // import { SimpleConfirmDialogComponent } from '@app/shared';
 class AssetList {
@@ -23,6 +24,8 @@ class DataMap {
   tags: object;
   localPath: string;
   dependencies: { [key: string]: AssetDependency };
+  //客户端资源,是需要创建材质模型等对象的
+  _clientAsset: boolean;
   _fileAssetId: string;
   _md5: string;
   _modifiedTime: number;
@@ -45,12 +48,15 @@ class AssetDependency {
 })
 export class AssetUploaderComponent implements OnInit, OnDestroy {
 
+  //UE4项目文件夹名称
   private _projectFolderName: string;
+  //UE4项目文件夹路径
+  _projectDir = "";
   _uploading = false;
   _uploadingProcessStep = 0;
-  _projectDir = "";
-  _allAssetDataMap: DataMap[] = [];
+  // _allAssetDataMap: DataMap[] = [];
   // _uploadSubscription: Subscription;
+  allAsset: { [key: string]: DataMap } = {};
   constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected httpClient: HttpClient) {
 
   }//constructor
@@ -94,110 +100,73 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
   clearAssetList() {
     this._projectDir = "";
-    this._allAssetDataMap = [];
+    this.allAsset = {};
+    // this._allAssetDataMap = [];
   }//clearAssetList
 
   selectProjectDir() {
-
     let dirs = this.electDialogSrv.showOpenDialog({ properties: ['openDirectory'] });
     if (!dirs || dirs.length == 0) return;
+    //分析项目文件夹名称和路径
     this._projectDir = dirs[0];
     let sdx = this._projectDir.lastIndexOf(path.sep);
     this._projectFolderName = this._projectDir.slice(sdx + 1, this._projectDir.length);
 
+    // 校验配置文件是否存在
     let checkAssetListFile = (configPath: string) => {
-      return new Promise((res, rej) => {
+      return new Promise((resolve, reject) => {
         fs.exists(configPath, exist => {
-          if (!exist) {
-            rej("message.cannotFindAssetListFile");
+          if (exist) {
+            resolve(configPath);
+            return;
           }
-          else
-            res(configPath);
-        });//exists
-      });//Promise
+          reject("message.cannotFindAssetListFile");
+        });
+      });
     };//checkAssetListFile
 
+    //分析配置文件里面所包含的资源
     let analyzeAllAssetFromConfig = (configPath: string) => {
-      return new Promise((res, rej) => {
+      return new Promise((resolve, reject) => {
         fsExtra.readJSON(configPath, { encoding: 'utf8' }, (err, assetList: AssetList) => {
           if (err) {
-            rej(err);
+            reject(err.message);
             return;
           }
 
           if (assetList.dataMap) {
             for (let k in assetList.dataMap) {
               let it = assetList.dataMap[k];
-              this._allAssetDataMap.push(it);
+              it._clientAsset = true;
+              this.allAsset[it.package] = it;
             }
           }//if
+
           if (assetList.dependencies) {
             for (let k in assetList.dependencies) {
               let it = assetList.dependencies[k];
-              this._allAssetDataMap.push(it);
+              this.allAsset[it.package] = it;
             }
           }//if
-          res();
-          // console.log(111, this._allAssetDataMap[1]);
-        });//readJSON
-      });//Promise
+          resolve();
+        });
+      });
     };//analyzeAllAssetFromConfig
 
-
-    // console.log('assetListPath', assetListPath);
-
     checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then(() => {
-      // console.log('res'); 
+      console.log('res', this.allAsset);
     });
   }//selectProjectDir
 
   upload() {
     this._uploading = true;
 
-    let checkFilePathAndStat = () => {
-      this._uploadingProcessStep = 1;
-      let allProArr = [];
-      this._allAssetDataMap.forEach((it, index) => {
-        allProArr.push(new Promise((res, rej) => {
-          //找到真实的文件路径
-          let idx = it.localPath.indexOf(this._projectFolderName);
-          let tplocalStr = it.localPath.slice(idx + this._projectFolderName.length, it.localPath.length);
-          //不知道ue4那边对文件路径分隔符是什么,都尝试一下
-          let sep = '/';
-          if (tplocalStr.indexOf(sep) == -1)
-            sep = "\\";
-          let tarr = tplocalStr.split(sep);
-          let prjName = tarr.join(path.sep);
-          it.localPath = this._projectDir + prjName;
-          this._allAssetDataMap[index].localPath = it.localPath;
-          // 查看文件信息
-          if (!it._modifiedTime) {
-            fs.stat(it.localPath, (err, stat) => {
-              if (err) {
-                rej(err);
-              }
-              else {
-                this._allAssetDataMap[index]._modifiedTime = stat.mtime.getTime();
-                res();
-              }
-            });
-          }//if
-          else {
-            res();
-          }
-        }));//push
-      });//forEach
-      return Promise.all(allProArr);
-    };//checkFilePathAndStat
+    let allPackageNames = Object.keys(this.allAsset);
 
-
-    let calcFileMD5 = () => {
-      this._uploadingProcessStep = 2;
-      for (let i = this._allAssetDataMap.length - 1; i >= 0; i--) {
-        let it = this._allAssetDataMap[i];
-        if (!it.localPath) continue;
-        if (it._md5) continue;
-        //找到真实的文件路径
+    //修正资源localPath可能出现的路径异常
+    let fixLocalPathError = () => {
+      allPackageNames.forEach(pck => {
+        let it = this.allAsset[pck];
         let idx = it.localPath.indexOf(this._projectFolderName);
         let tplocalStr = it.localPath.slice(idx + this._projectFolderName.length, it.localPath.length);
         //不知道ue4那边对文件路径分隔符是什么,都尝试一下
@@ -207,108 +176,119 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
         let tarr = tplocalStr.split(sep);
         let prjName = tarr.join(path.sep);
         it.localPath = this._projectDir + prjName;
-      }//for
+      });
+      return Promise.resolve();
+    };//fixLocalPathError
 
+    //检测文件修改时间信息,用来校验md5,不能只根据package记录md5,还应该加上修改时间
+    let checkAssetStat = () => {
+      this._uploadingProcessStep = 1;
+      let limit = promiseLimit(20);
+      let checkStat = (it: DataMap) => {
+        return new Promise((resolve, reject) => {
+          if (it._modifiedTime) {
+            resolve();
+            return;
+          }
 
-      let allProArr = [];
-      this._allAssetDataMap.forEach((it, index) => {
-        allProArr.push(new Promise((res, rej) => {
+          fs.stat(it.localPath, (err, stat) => {
+            if (err) {
+              reject(err.message);
+              return;
+            }
+            it._modifiedTime = stat.mtime.getTime();
+            resolve();
+          });//stat
+        });
+      };//checkStat
+      return Promise.all(allPackageNames.map(pck => {
+        let it = this.allAsset[pck];
+        return limit(() => checkStat(it));
+      }));
+    };//checkAssetStat
+
+    //计算文件的md5信息
+    let calcFileMD5 = () => {
+      this._uploadingProcessStep = 2;
+      let limit = promiseLimit(10);
+      let calcMD5 = (it: DataMap) => {
+        return new Promise((resolve, reject) => {
+          if (it._md5) {
+            resolve();
+            return;
+          }
+
           fs.readFile(it.localPath, (err, buff) => {
             if (err) {
-              rej(err);
+              reject(err.message);
               return;
             }
 
             let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.package, it._modifiedTime);
-            // console.log(111,_md5);
+            // console.log(111, _md5);
             if (!_md5) {
               _md5 = MD5(buff);
               this.assetMd5CacheSrv.cacheMd5(it.package, _md5, it._modifiedTime);
             }
-            this._allAssetDataMap[index]._md5 = _md5;
-            res();
-          });
-        }));
-      });//forEach
+            it._md5 = _md5;
+            resolve();
+          });//readFile
 
-      return Promise.all(allProArr);
+        });
+      };//calcMD5
+      return Promise.all(allPackageNames.map(pck => {
+        let it = this.allAsset[pck];
+        return limit(() => calcMD5(it));
+      }));
     };//calcFileMD5
 
+    //上传资源文件
     let uploadSingleFiles = () => {
-      this._uploadingProcessStep = 2;
-      return Promise.all(this._allAssetDataMap.splice(0, 1).map(it => {
-        return new Promise((res, rej) => {
-          // let exitAsset = this.assetSrv.getById(it._md5);
-          // this.assetSrv.getById(it._md5).subscribe(rs=>{
-          //   console.log('uploadSingleFiles',rs);
-          // }); 
+      this._uploadingProcessStep = 3;
+      let limit = promiseLimit(20);
+      let uploadFile = (it: DataMap) => {
+        return new Promise((resolve, reject) => {
+          this.assetSrv.checkFileExistByMd5(it._md5).subscribe(rs => {
+            if (rs.exist) {
+              resolve();
+              return;
+            }
 
-          let uploadReq = request.post(`${this.configSrv.server}/oss/files/stream`, { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(it.localPath) } }, (err, re, body) => {
-            console.log(111, err, re, body, it);
-            res();
-          });
-          fs.createReadStream(it.localPath).pipe(uploadReq);
-
-
-          // this.assetSrv.checkFileExistByMd5(it._md5).subscribe(rs => {
-          //   console.log('check', rs);
-          // });
-        });//Promise
-      })).then(() => {
-        return Promise.resolve();
-      });//all
+            let uploadReq = request.post(`${this.configSrv.server}/oss/files/stream`, { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(it.localPath) } }, (err, re, body) => {
+              if (err) {
+                reject(err.message);
+                return;
+              }
+              // console.log(111, err, re, body, it);
+              resolve();
+            });
+            fs.createReadStream(it.localPath).pipe(uploadReq);
+          }, err => {
+            reject("服务器无法连接");
+          });//subscribe
+        });//
+      };//uploadFile
+      return Promise.all(allPackageNames.map(pck => {
+        let it = this.allAsset[pck];
+        return limit(() => uploadFile(it));
+      }));
     };//uploadSingleFiles
 
-    checkFilePathAndStat().then(calcFileMD5).then(() => {
-      console.log('上传完毕', this._allAssetDataMap);
+
+
+    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadSingleFiles).then(() => {
+      console.log('finished!', this.allAsset);
       this._uploading = false;
       this.assetMd5CacheSrv.persistCache2File();
     }, err => {
-      console.error('err:', err);
+      console.error('some err:', err);
+      this._uploading = false;
     });
-
-    // checkFilePathAndCalcFilesMd5().then(uploadSingleFiles).then(() => {
-    //   console.log('上传完毕');
-    // });
-
   }//upload
 
-  // cancelUpload() {
-  //   this._uploading = false;
-  //   this.dialogSrv.open(SimpleConfirmDialogComponent, { width: '300px', height: '250px', data: { message: 'message.cancelThenDeleteAllAssetList' } });
-  // }//cancelUpload
-
-  // analyzeAssetFromConfig(assetListPath: string) {
-  //   fsExtra.readJSON(assetListPath, { encoding: 'utf8' }, (err, assetList: AssetList) => {
-  //     if (err) {
-  //       console.error(err);
-  //       return;
-  //     }
-
-  //     // this._allAssetDataMap.push();
-  //     if (assetList.dataMap) {
-  //       for (let k in assetList.dataMap) {
-  //         let it = assetList.dataMap[k];
-  //         this._allAssetDataMap.push(it);
-  //       }
-  //     }//if
-  //     if (assetList.dependencies) {
-  //       for (let k in assetList.dependencies) {
-  //         let it = assetList.dataMap[k];
-  //         this._allAssetDataMap.push(it);
-  //       }
-  //     }//if
-
-  //     // console.log(111, this._allAssetDataMap[1]);
-  //   });//readJSON
-
-  // }//analyzeAssetFromConfig
 
   confirmLeaveUploader() {
     this.dialogSrv.open(SimpleMessageDialogComponent, { width: '300px', height: '250px', data: { message: 'message.waitTilFinishUploadingBeforeLeaving' } });
   }//confirmLeaveUploader
 
-  identify(index: number, item: DataMap) {
-    return item.package;
-  }//identify
 }

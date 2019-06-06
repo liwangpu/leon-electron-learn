@@ -28,7 +28,7 @@ export class AssetUploaderMd5CacheService {
     fsExtra.readJSON(this._cacheFileName, { encoding: 'utf8' }, (err, obj) => {
       if (err) return;
       this._cacheLoad = true;
-      // console.log('loadCacheFile cache:', obj);
+      // console.log('loadCacheFile cache:', obj); 
       if (obj)
         this._cache = obj;
     });
