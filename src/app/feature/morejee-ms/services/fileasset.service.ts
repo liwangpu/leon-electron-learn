@@ -17,7 +17,7 @@ export class FileassetService {
   }//constructor
 
 
-  query(queryParam: object) {
+  query(queryParam: any) {
     let queryPart = queryString.stringify(queryParam);
     return this.httpClient.get<{ total: number, data: Fileasset[] }>(`${this._URI}?${queryPart}`);
   }//query
@@ -27,7 +27,7 @@ export class FileassetService {
   }//get
 
   checkFileExistByMd5(md5: string) {
-    return this.httpClient.get<{ exist: boolean }>(`${this._URI}/Md5/${md5}`);
+    return this.httpClient.get<boolean>(`${this._URI}/Md5/${md5}`);
   }//checkFileExistByMd5
 
   post(entity: Fileasset) {

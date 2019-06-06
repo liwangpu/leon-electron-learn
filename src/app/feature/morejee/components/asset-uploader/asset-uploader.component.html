@@ -6,7 +6,7 @@
       [disabled]='!_projectDir||_uploading' mat-stroked-button (click)='clearAssetList()'>清空</button>
     <button class="normal ml" [disabled]='_uploading' mat-stroked-button (click)='selectProjectDir()'>选择</button>
     <button class="normal ml" [disabled]='_uploading||!_projectDir' mat-stroked-button (click)='upload()'>上传</button>
-    <!-- <button class="normal ml clear" mat-stroked-button (click)='test()'>清空缓存</button> -->
+    <button class="normal ml clear" mat-stroked-button (click)='test()'>测试</button>
   </div>
   <div class="content">
     <div class="asset-list">
@@ -17,7 +17,7 @@
             <th>包名</th>
             <th class="name">名称</th>
             <th class="type">类型</th>
-            <th class="status">状态</th>
+            <!-- <th class="status">状态</th> -->
           </tr>
         </thead>
         <tbody>
@@ -26,7 +26,7 @@
             <td class="lj">{{ky.key}}</td>
             <td class="lj">{{ky.value.name}}</td>
             <td class="lj">{{ky.value.class}}</td>
-            <td>4</td>
+            <!-- <td>4</td> -->
           </tr>
         </tbody>
       </table>
@@ -36,9 +36,11 @@
       <div class="msg">
         <p [class.active]='_uploadingProcessStep==1'>收集文件信息</p>
         <p [class.active]='_uploadingProcessStep==2'>计算MD5</p>
-        <p [class.active]='_uploadingProcessStep==3'>上传文件</p>
-        <p [class.active]='_uploadingProcessStep==4'>创建对象</p>
-        <p [class.active]='_uploadingProcessStep==5'>创建上传凭据</p>
+        <p [class.active]='_uploadingProcessStep==3'>上传依赖项文件</p>
+        <p [class.active]='_uploadingProcessStep==4'>上传图标</p>
+        <p [class.active]='_uploadingProcessStep==5'>上传Source原文件</p>
+        <p [class.active]='_uploadingProcessStep==9'>创建对象</p>
+        <p [class.active]='_uploadingProcessStep==10'>创建上传凭据</p>
       </div>
     </div>
   </div>

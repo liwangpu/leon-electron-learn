@@ -24,8 +24,13 @@ class DataMap {
   tags: object;
   localPath: string;
   dependencies: { [key: string]: AssetDependency };
+  srcFile: AssetDependency;
+  unCookedFile: AssetDependency;
   //客户端资源,是需要创建材质模型等对象的
   _clientAsset: boolean;
+  _iconUrl: string;
+  _sourceClientAssetUrl: string;
+  _unCookedClientAssetUrl: string;
   _fileAssetId: string;
   _md5: string;
   _modifiedTime: number;
@@ -91,6 +96,12 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
     //   console.log(`The MD5 sum of LICENSE.md is: ${hash}`)
     // });
+
+    // this.assetSrv.checkFileExistByMd5("03328fc6226b5ae926445a454618acbc1").subscribe(exist => {
+    //   console.log(111, exist, typeof exist);
+    // });
+
+
   }//test
 
   clearAssetList() {
@@ -246,8 +257,8 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       let limit = promiseLimit(20);
       let uploadFile = (it: DataMap) => {
         return new Promise((resolve, reject) => {
-          this.assetSrv.checkFileExistByMd5(it._md5).subscribe(rs => {
-            if (rs.exist) {
+          this.assetSrv.checkFileExistByMd5(it._md5).subscribe(exist => {
+            if (exist) {
               resolve();
               return;
             }
@@ -274,13 +285,131 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       }));
     };//uploadSingleFiles
 
-    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadSingleFiles).then(() => {
+    //上传图标
+    let uploadIconFiles = () => {
+      this._uploadingProcessStep = 4;
+      let limit = promiseLimit(20);
+      let uploadIcon = (it: DataMap) => {
+        return new Promise((resolve, reject) => {
+          //非对象资源
+          if (!it._clientAsset) {
+            resolve();
+            return;
+          }//if
+          //不含图标信息
+          let allDeps = Object.keys(it.dependencies);
+          if (allDeps.every(pck => pck.indexOf("UploadIcons") == -1)) {
+            resolve();
+            return;
+          }//if
+          //
+          let pck = allDeps.filter(pck => pck.indexOf("UploadIcons") > -1)[0];
+          let iconAsset = it.dependencies[pck];
+          let idx = iconAsset.localPath.indexOf(this._projectFolderName);
+          let tplocalStr = iconAsset.localPath.slice(idx + this._projectFolderName.length, iconAsset.localPath.length);
+          //不知道ue4那边对文件路径分隔符是什么,都尝试一下
+          let sep = '/';
+          if (tplocalStr.indexOf(sep) == -1)
+            sep = "\\";
+          let tarr = tplocalStr.split(sep);
+          let prjName = tarr.join(path.sep);
+          let iconPath = this._projectDir + prjName;
+          //校验一下文件是否真实存在
+          fs.exists(iconPath, exist => {
+            if (!exist) {
+              resolve();
+              return;
+            }
+
+            let uploadReq = request.post(`${this.configSrv.server}/oss/icons/stream`, { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(iconPath), timeout: 600000 } }, (err, re, body) => {
+              if (err) {
+                resolve();
+                console.error('upload icon error:', err);
+                return;
+              }
+              it._iconUrl = body;
+              resolve();
+            });
+            fs.createReadStream(iconPath).pipe(uploadReq);
+          });//exists
+
+        });
+      };//uploadIcon
+      return Promise.all(allPackageNames.map(pck => {
+        let it = this.allAsset[pck];
+        return limit(() => uploadIcon(it));
+      }));
+    };//uploadIconFiles
+
+    //上传Source原文件
+    let uploadSourceClientAssets = () => {
+      this._uploadingProcessStep = 5;
+      let limit = promiseLimit(20);
+      let uploadSource = (it: DataMap) => {
+        return new Promise((resolve, rejcet) => {
+
+          if (!it.srcFile || !it.srcFile.localPath) {
+            resolve();
+            return;
+          }//if
+
+          let idx = it.srcFile.localPath.indexOf(this._projectFolderName);
+          let tplocalStr = it.srcFile.localPath.slice(idx + this._projectFolderName.length, it.srcFile.localPath.length);
+          //不知道ue4那边对文件路径分隔符是什么,都尝试一下
+          let sep = '/';
+          if (tplocalStr.indexOf(sep) == -1)
+            sep = "\\";
+          let tarr = tplocalStr.split(sep);
+          let prjName = tarr.join(path.sep);
+          let srcPath = this._projectDir + prjName;
+
+          //校验一下文件是否真实存在
+          fs.exists(srcPath, exist => {
+            if (!exist) {
+              resolve();
+              return;
+            }
+
+            let uploadReq = request.post(`${this.configSrv.server}/oss/srcClientAssets/stream`, { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(srcPath), timeout: 600000 } }, (err, re, body) => {
+              if (err) {
+                resolve();
+                console.error('upload source asset error:', err);
+                return;
+              }
+              it._sourceClientAssetUrl = body;
+              resolve();
+            });
+            fs.createReadStream(srcPath).pipe(uploadReq);
+          });//exists
+          resolve();
+        });
+      };//uploadSource
+
+      return Promise.all(allPackageNames.map(pck => {
+        let it = this.allAsset[pck];
+        return limit(() => uploadSource(it));
+      }));
+    }//uploadSourceClientAssets
+
+    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(uploadSourceClientAssets).then(() => {
       this._uploading = false;
       this.assetMd5CacheSrv.persistCache2File();
+      // console.log();
+      // let cc = allPackageNames.map(pck => this.allAsset[pck]._iconUrl).filter(url => url);
+      // console.log('cc', cc);
     }, err => {
       console.error('some err:', err);
       this._uploading = false;
     });//then
+
+
+    // fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadSingleFiles).then(() => {
+    //   this._uploading = false;
+    //   this.assetMd5CacheSrv.persistCache2File();
+    // }, err => {
+    //   console.error('some err:', err);
+    //   this._uploading = false;
+    // });//then
 
   }//upload
 
