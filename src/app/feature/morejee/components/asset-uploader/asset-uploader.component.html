@@ -6,7 +6,7 @@
       [disabled]='!_projectDir||_uploading' mat-stroked-button (click)='clearAssetList()'>清空</button>
     <button class="normal ml" [disabled]='_uploading' mat-stroked-button (click)='selectProjectDir()'>选择</button>
     <button class="normal ml" [disabled]='_uploading||!_projectDir' mat-stroked-button (click)='upload()'>上传</button>
-    <!-- <button class="normal ml" mat-stroked-button (click)='test()'>测试</button> -->
+    <button class="normal ml clear" mat-stroked-button (click)='test()'>清空缓存</button>
   </div>
   <div class="content">
     <div class="asset-list">

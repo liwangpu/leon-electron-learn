@@ -148,13 +148,18 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               this.allAsset[it.package] = it;
             }
           }//if
+
+
+
+          // console.log();
+
           resolve();
         });
       });
     };//analyzeAllAssetFromConfig
 
     checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then(() => {
-      console.log('res', this.allAsset);
+      // console.log('res', this.allAsset);
     });
   }//selectProjectDir
 
@@ -163,6 +168,9 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
     let allPackageNames = Object.keys(this.allAsset);
 
+
+
+    // console.log(1111, allPackageNames.length);
     //修正资源localPath可能出现的路径异常
     let fixLocalPathError = () => {
       allPackageNames.forEach(pck => {
@@ -254,15 +262,17 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               return;
             }
 
-            let uploadReq = request.post(`${this.configSrv.server}/oss/files/stream`, { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(it.localPath) } }, (err, re, body) => {
+            //上传文件
+            let uploadReq = request.post(`${this.configSrv.server}/oss/files/stream`, { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(it.localPath), timeout: 600000 } }, (err, re, body) => {
               if (err) {
                 reject(err.message);
                 return;
               }
-              // console.log(111, err, re, body, it);
+              // console.log(111, err, re);  
               resolve();
             });
             fs.createReadStream(it.localPath).pipe(uploadReq);
+            // console.log('not exist',it);
           }, err => {
             reject("服务器无法连接");
           });//subscribe
@@ -273,8 +283,6 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
         return limit(() => uploadFile(it));
       }));
     };//uploadSingleFiles
-
-
 
     fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadSingleFiles).then(() => {
       console.log('finished!', this.allAsset);
