@@ -29,7 +29,7 @@ class DataMap {
   //客户端资源,是需要创建材质模型等对象的
   _clientAsset: boolean;
   _iconUrl: string;
-  
+  _sourceClientAssetMd5: string;
   _sourceClientAssetUrl: string;
   _unCookedClientAssetUrl: string;
   _fileAssetId: string;
@@ -170,6 +170,15 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
     let allPackageNames = Object.keys(this.allAsset);
 
+    // //修复文件的地址
+    // let fixLocalPathAndCalcFileMd5 = () => {
+
+    // };//fixLocalPathAndCalcFileMd5
+
+
+
+
+
     //修正资源localPath可能出现的路径异常
     let fixLocalPathError = () => {
       allPackageNames.forEach(pck => {
@@ -269,10 +278,42 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       }));
     };//calcFileMD5
 
-    //计算source文件的md5信息
-    let calcSourceFileMD5=()=>{
+    // //计算source文件的md5信息
+    // let calcSourceFileMD5 = () => {
+    //   this._uploadingProcessStep = 2;
+    //   let limit = promiseLimit(10);
+    //   let calcMD5 = (it: DataMap) => {
+    //     return new Promise((resolve, reject) => {
+    //       if (it._sourceClientAssetMd5) {
+    //         resolve();
+    //         return;
+    //       }
 
-    };//calcSourceFileMD5
+    //       let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.package, it._modifiedTime, it._size);
+    //       // console.log(111, _md5);
+    //       if (!_md5) {
+    //         md5File(it.localPath, (err, hash) => {
+    //           if (err) {
+    //             reject(err.message);
+    //             return;
+    //           }
+    //           it._md5 = hash;
+    //           this.assetMd5CacheSrv.cacheMd5(it.package, hash, it._modifiedTime, it._size);
+    //           resolve();
+    //           return;
+    //         });
+    //       }
+    //       else {
+    //         it._md5 = _md5;
+    //         resolve();
+    //       }
+    //     });
+    //   };//calcMD5
+    //   return Promise.all(allPackageNames.map(pck => {
+    //     let it = this.allAsset[pck];
+    //     return limit(() => calcMD5(it));
+    //   }));
+    // };//calcSourceFileMD5
 
     //上传资源文件
     let uploadSingleFiles = () => {
