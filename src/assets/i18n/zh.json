@@ -7,7 +7,7 @@
     },
     "message": {
         "cannotFindAssetListFile": "没有在目录下发现\\Saved\\AssetMan\\assetlist.txt，请确认是否选中项目目录或者文件是否存在！",
-        "waitTilFinishUploadingBeforeLeaving": "正在上传资源信息，请耐心等待上传完毕！(如果需要取消可等待上传完毕后根据凭据撤回本次上传)"
+        "waitTilFinishUploadingBeforeLeaving": "正在上传资源信息，请耐心等待上传完毕！"
     },
     "button": {
         "new": "新建",

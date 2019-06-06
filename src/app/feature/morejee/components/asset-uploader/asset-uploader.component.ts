@@ -55,9 +55,10 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   _projectDir = "";
   _uploading = false;
   _uploadingProcessStep = 0;
-  // _allAssetDataMap: DataMap[] = [];
-  // _uploadSubscription: Subscription;
   allAsset: { [key: string]: DataMap } = {};
+  get allAssetCount() {
+    return Object.keys(this.allAsset).length;
+  }
   constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected httpClient: HttpClient) {
 
   }//constructor
@@ -83,27 +84,13 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   }
 
   test() {
-    let filePath = 'C:\\Users\\Leon\\Desktop\\AssetMinimalTemplate\\Saved\\Cooked\\WindowsNoEditor\\AssetMinimalTemplate\\Content\\EHOME-MAT\\20181224\\DiffuseTextures\\1-faxintietu\\85-danyi-nom3.uasset';
+    // let filePath = 'C:\\Users\\Leon\\Desktop\\AssetMinimalTemplate\\Saved\\Cooked\\WindowsNoEditor\\AssetMinimalTemplate\\Content\\EHOME-MAT\\20181224\\DiffuseTextures\\1-faxintietu\\85-danyi-nom3.uasset';
 
-    md5File(filePath, (err, hash) => {
-      if (err) throw err
+    // md5File(filePath, (err, hash) => {
+    //   if (err) throw err
 
-      console.log(`The MD5 sum of LICENSE.md is: ${hash}`)
-    });
-
-    // fs.readFile(filePath, (err, buff) => {
-    //   if (err) {
-    //     console.error(err);
-    //     return;
-    //   } 
-    //   console.log('md5', MD5(buff));
+    //   console.log(`The MD5 sum of LICENSE.md is: ${hash}`)
     // });
-    // // let rerr = request.post("http://192.168.99.100:9503/oss/files/stream", { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(filePath) } }, (err, res, body) => {
-    // //   console.log(111, err, res, body);
-    // // });
-    // // fs.createReadStream(filePath).pipe(rerr);
-
-
   }//test
 
   clearAssetList() {
@@ -171,8 +158,6 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
     let allPackageNames = Object.keys(this.allAsset);
 
-
-    // console.log(1111, allPackageNames.length);
     //修正资源localPath可能出现的路径异常
     let fixLocalPathError = () => {
       allPackageNames.forEach(pck => {
@@ -290,13 +275,12 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     };//uploadSingleFiles
 
     fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadSingleFiles).then(() => {
-      console.log('finished!', this.allAsset);
       this._uploading = false;
       this.assetMd5CacheSrv.persistCache2File();
     }, err => {
       console.error('some err:', err);
       this._uploading = false;
-    });
+    });//then
 
   }//upload
 
