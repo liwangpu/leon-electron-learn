@@ -17,10 +17,10 @@ export class AssetUploaderMd5CacheService {
   private _cache: { [key: string]: MD5CacheDetail } = {};
   private _cacheLoad = false;
   private _cacheChange = false;
-  constructor() {
+  constructor() { 
     let tmpDir = os.tmpdir();
-    // console.log(1112,tmpDir);
     this._cacheFileName = path.join(tmpDir, 'asset-upload-md5-cache.json');
+    console.log('md5 cache file',this._cacheFileName);
   }//constructor
 
   loadCacheFile() {
