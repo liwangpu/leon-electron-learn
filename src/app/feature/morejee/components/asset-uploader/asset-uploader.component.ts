@@ -3,7 +3,6 @@ import { ElectronDialogService, MessageCenterService, AppCacheService, FileHelpe
 import * as path from "path";
 import * as fs from 'fs';
 import * as fsExtra from "fs-extra";
-// import * as MD5 from "MD5";
 import * as  md5File from 'md5-file';
 import { MatDialog } from '@angular/material/dialog';
 import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
@@ -12,7 +11,7 @@ import { HttpClient } from '@angular/common/http';
 import * as request from 'request';
 import * as promiseLimit from 'promise-limit';
 import { AssetUploaderMd5CacheService } from '../../services/asset-uploader-md5-cache.service';
-// import { SimpleConfirmDialogComponent } from '@app/shared';
+
 class AssetList {
   dataMap: { [key: string]: DataMap };
   dependencies: { [key: string]: DataMap };
@@ -30,6 +29,7 @@ class DataMap {
   _fileAssetId: string;
   _md5: string;
   _modifiedTime: number;
+  _size: number;
 }
 
 class AssetDependency {
@@ -172,7 +172,6 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     let allPackageNames = Object.keys(this.allAsset);
 
 
-
     // console.log(1111, allPackageNames.length);
     //修正资源localPath可能出现的路径异常
     let fixLocalPathError = () => {
@@ -208,6 +207,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               return;
             }
             it._modifiedTime = stat.mtime.getTime();
+            it._size = stat.size;
             resolve();
           });//stat
         });
@@ -229,7 +229,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
             return;
           }
 
-          let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.package, it._modifiedTime);
+          let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.package, it._modifiedTime, it._size);
           // console.log(111, _md5);
           if (!_md5) {
             md5File(it.localPath, (err, hash) => {
@@ -238,7 +238,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
                 return;
               }
               it._md5 = hash;
-              this.assetMd5CacheSrv.cacheMd5(it.package, hash, it._modifiedTime);
+              this.assetMd5CacheSrv.cacheMd5(it.package, hash, it._modifiedTime, it._size);
               resolve();
               return;
             });
@@ -277,7 +277,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               resolve();
             });
             fs.createReadStream(it.localPath).pipe(uploadReq);
-            console.log('not exist',it);
+            console.log('not exist', it);
           }, err => {
             reject("服务器无法连接");
           });//subscribe
@@ -289,15 +289,6 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       }));
     };//uploadSingleFiles
 
-    // fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(() => {
-    //   console.log('finished!', this.allAsset);
-    //   this._uploading = false;
-    //   this.assetMd5CacheSrv.persistCache2File();
-    // }, err => {
-    //   console.error('some err:', err);
-    //   this._uploading = false;
-    // });
-
     fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadSingleFiles).then(() => {
       console.log('finished!', this.allAsset);
       this._uploading = false;
@@ -306,6 +297,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       console.error('some err:', err);
       this._uploading = false;
     });
+
   }//upload
 
 

@@ -6,6 +6,7 @@ import * as fsExtra from "fs-extra";
 class MD5CacheDetail {
   md5: string;
   modifiedTime: number;
+  size: number;
 }
 
 @Injectable({
@@ -17,10 +18,10 @@ export class AssetUploaderMd5CacheService {
   private _cache: { [key: string]: MD5CacheDetail } = {};
   private _cacheLoad = false;
   private _cacheChange = false;
-  constructor() { 
+  constructor() {
     let tmpDir = os.tmpdir();
     this._cacheFileName = path.join(tmpDir, 'asset-upload-md5-cache.json');
-    console.log('md5 cache file',this._cacheFileName);
+    // console.log('md5 cache file', this._cacheFileName);
   }//constructor
 
   loadCacheFile() {
@@ -39,18 +40,20 @@ export class AssetUploaderMd5CacheService {
     fsExtra.writeJSON(this._cacheFileName, this._cache);
   }//persistCache2File
 
-  cacheMd5(pck: string, md5: string, modifiedTime: number) {
+  cacheMd5(pck: string, md5: string, modifiedTime: number, size: number) {
     this._cache[pck] = {
       md5: md5,
-      modifiedTime: modifiedTime
+      modifiedTime: modifiedTime,
+      size: size
     };
     this._cacheChange = true;
   }//cacheMd5
 
-  getMd5Cache(pck: string, modifiedTime: number) {
+  getMd5Cache(pck: string, modifiedTime: number, size: number) {
     let it = this._cache[pck];
     if (!it) return;
     if (it.modifiedTime != modifiedTime) return;
+    if (it.size != size) return;
     return it.md5;
   }//getMd5Cache
 
