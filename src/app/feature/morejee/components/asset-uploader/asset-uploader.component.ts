@@ -6,7 +6,7 @@ import * as fsExtra from "fs-extra";
 import * as  md5File from 'md5-file';
 import { MatDialog } from '@angular/material/dialog';
 import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
-import { FileassetService, SrcClientAssetService } from '@app/morejee-ms';
+import { FileassetService, SrcClientAssetService, MapService, Map } from '@app/morejee-ms';
 import * as request from 'request';
 import * as promiseLimit from 'promise-limit';
 import { AssetUploaderMd5CacheService } from '../../services/asset-uploader-md5-cache.service';
@@ -86,7 +86,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   get allAssetCount() {
     return Object.keys(this.allAsset).length;
   }
-  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected srcAssetSrv: SrcClientAssetService) {
+  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected srcAssetSrv: SrcClientAssetService, protected mapSrv: MapService) {
 
   }//constructor
 
@@ -429,7 +429,68 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       }));
     };//uploadSingleFiles
 
-    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(uploadSrcAssetFiles).then(uploadSingleFiles).then(() => {
+
+    let createClientObject = () => {
+      this._uploadingProcessStep = 6;
+      let limit = promiseLimit(20);
+      let createObj = (it: DataMap) => {
+        return new Promise((resolve, reject) => {
+          if (!it._clientAsset) {
+            resolve();
+            return;
+          }
+
+          let clientAsset = {};
+          clientAsset["name"] = it.name;
+          let f = this._allSingleFileAsset[it.package];
+          clientAsset["cookedAssetId"] = f._md5;
+          clientAsset["cookedAssetPackageName"] = f.package;
+
+          if (it.srcFile && it.srcFile.package && this._allSingleFileAsset[it.srcFile.package]) {
+            let f = this._allSingleFileAsset[it.srcFile.package];
+            clientAsset["sourceAssetId"] = f._md5;
+            clientAsset["sourceAssetPackageName"] = f.package;
+          }
+          if (it.unCookedFile && it.unCookedFile.package && this._allSingleFileAsset[it.unCookedFile.package]) {
+            let f = this._allSingleFileAsset[it.unCookedFile.package];
+            clientAsset["unCookedAssetId"] = f._md5;
+            clientAsset["unCookedAssetPackageName"] = f.package;
+          }
+
+ 
+
+
+          if (it.class.indexOf("World") > -1) {
+            this.mapSrv.post(clientAsset as Map).subscribe(rs => {
+              console.log('map created', rs);
+              resolve();
+            }, err => {
+              console.error("地图创建异常:", err);
+              resolve();
+            });
+          }
+          else if (it.class.indexOf("Texture") > -1) {
+            resolve();
+          }
+          else if (it.class.indexOf("Material") > -1) {
+            resolve();
+          }
+          else if (it.class.indexOf("StaticMesh") > -1) {
+            resolve();
+          }
+          else {
+            console.error("什么,还有class为其他类型:", it.class);
+            resolve();
+          }
+        });
+      };//createObj
+      return Promise.all(allPackageNames.map(pck => {
+        let it = this.allAsset[pck];
+        return limit(() => createObj(it));
+      }));
+    };//createClientObject
+
+    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(uploadSrcAssetFiles).then(uploadSingleFiles).then(createClientObject).then(() => {
       console.log('finished!');
       console.log(111, this._allSingleFileAsset);
       this._uploading = false;
