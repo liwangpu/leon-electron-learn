@@ -7,7 +7,6 @@ import * as  md5File from 'md5-file';
 import { MatDialog } from '@angular/material/dialog';
 import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
 import { FileassetService, SrcClientAssetService } from '@app/morejee-ms';
-import { HttpClient } from '@angular/common/http';
 import * as request from 'request';
 import * as promiseLimit from 'promise-limit';
 import { AssetUploaderMd5CacheService } from '../../services/asset-uploader-md5-cache.service';
@@ -87,7 +86,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   get allAssetCount() {
     return Object.keys(this.allAsset).length;
   }
-  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected srcAssetSrv: SrcClientAssetService, protected httpClient: HttpClient) {
+  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected srcAssetSrv: SrcClientAssetService) {
 
   }//constructor
 
@@ -364,16 +363,26 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
             return;
           }
 
-          nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/srcClientAssets/stream`, (err, url) => {
-            if (err) {
-              console.error('上传source file异常:', err);
+          this.srcAssetSrv.checkFileExistByMd5(it._md5).subscribe(exist => {
+            if (exist) {
               resolve();
               return;
             }
-            console.log(6, url);
-            it._url = url;
+
+            nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/srcClientAssets/stream`, (err, url) => {
+              if (err) {
+                console.error('上传source file异常:', err);
+                resolve();
+                return;
+              }
+              // console.log(6, url);
+              it._url = url;
+              resolve();
+            });//nodeJsAPIUploadFile
+          }, err => {
+            console.log("上传源文件异常:", err);
             resolve();
-          });//nodeJsAPIUploadFile
+          });//subscribe
         });
       };//uploadSrcFile
 
