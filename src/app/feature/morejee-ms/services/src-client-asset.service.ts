@@ -13,6 +13,6 @@ export class SrcClientAssetService {
   }//constructor
 
   checkFileExistByMd5(md5: string) {
-    return this.httpClient.get<boolean>(`${this._URI}/Md5/${md5}`);
+    return this.httpClient.get(`${this._URI}/Md5/${md5}`, { responseType: "text" });
   }//checkFileExistByMd5
 }

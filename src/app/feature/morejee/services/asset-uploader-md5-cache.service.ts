@@ -40,8 +40,8 @@ export class AssetUploaderMd5CacheService {
     fsExtra.writeJSON(this._cacheFileName, this._cache);
   }//persistCache2File
 
-  cacheMd5(pck: string, md5: string, modifiedTime: number, size: number) {
-    this._cache[pck] = {
+  cacheMd5(lcp: string, md5: string, modifiedTime: number, size: number) {
+    this._cache[lcp] = {
       md5: md5,
       modifiedTime: modifiedTime,
       size: size
@@ -49,8 +49,8 @@ export class AssetUploaderMd5CacheService {
     this._cacheChange = true;
   }//cacheMd5
 
-  getMd5Cache(pck: string, modifiedTime: number, size: number) {
-    let it = this._cache[pck];
+  getMd5Cache(lcp: string, modifiedTime: number, size: number) {
+    let it = this._cache[lcp];
     if (!it) return;
     if (it.modifiedTime != modifiedTime) return;
     if (it.size != size) return;

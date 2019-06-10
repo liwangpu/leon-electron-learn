@@ -27,7 +27,7 @@ export class FileassetService {
   }//get
 
   checkFileExistByMd5(md5: string) {
-    return this.httpClient.get<boolean>(`${this._URI}/Md5/${md5}`);
+    return this.httpClient.get(`${this._URI}/Md5/${md5}`, { responseType: "text" });
   }//checkFileExistByMd5
 
   post(entity: Fileasset) {

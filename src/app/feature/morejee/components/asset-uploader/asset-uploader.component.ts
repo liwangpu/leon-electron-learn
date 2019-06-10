@@ -27,6 +27,7 @@ class DataMap {
   unCookedFile: AssetDependency;
   //客户端资源,是需要创建材质模型等对象的
   _clientAsset: boolean;
+  _iconLocalPath: string;
   // _iconUrl: string;
   // _sourceClientAssetMd5: string;
   // _sourceClientAssetUrl: string;
@@ -52,7 +53,6 @@ class AssetDependency {
  * 修正路径和计算md5次数重复,所以拆解成单文件格式
  */
 class SingleAsset {
-  package: string;
   localPath: string;
   _notExist: boolean;
   _iconFile: boolean;
@@ -61,11 +61,9 @@ class SingleAsset {
   _md5: string;
   _modifiedTime: number;
   _size: number;
-
-  constructor(pck: string, lcPath: string) {
-    this.package = pck;
-    this.localPath = lcPath;
-  }//constructor
+  constructor(lcp: string) {
+    this.localPath = lcp;
+  }
 }
 
 @Component({
@@ -192,22 +190,24 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
     let allPackageNames = Object.keys(this.allAsset);
 
+    let package2SingleFileMap = {};
     //提取所有单文件
     for (let pck of allPackageNames) {
       let item = this.allAsset[pck];
       //顶级文件
-      this._allSingleFileAsset[pck] = new SingleAsset(pck, item.localPath);
+      this._allSingleFileAsset[item.localPath] = new SingleAsset(item.localPath);
+      package2SingleFileMap[item.package] = item.localPath;
       //source file
-      if (item.srcFile && item.srcFile.package) {
-        let f = new SingleAsset(item.srcFile.package, item.srcFile.localPath);
+      if (item.srcFile && item.srcFile.localPath) {
+        let f = new SingleAsset(item.srcFile.localPath);
         f._srcAsset = true;
-        this._allSingleFileAsset[item.srcFile.package] = f;
+        this._allSingleFileAsset[item.srcFile.localPath] = f;
       }
       //uncooked file
-      if (item.unCookedFile && item.unCookedFile.package) {
-        let f = new SingleAsset(item.unCookedFile.package, item.unCookedFile.localPath);
+      if (item.unCookedFile && item.unCookedFile.localPath) {
+        let f = new SingleAsset(item.unCookedFile.localPath);
         f._srcAsset = true;
-        this._allSingleFileAsset[item.unCookedFile.package] = f;
+        this._allSingleFileAsset[item.unCookedFile.localPath] = f;
       }
       //icon file
       let dcpPackageNames = Object.keys(item.dependencies);
@@ -215,9 +215,11 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
         let iconPck = dcpPackageNames.filter(x => x.indexOf('UploadIcons') > -1)[0];
         if (iconPck) {
           let iconItem = item.dependencies[iconPck];
-          let f = new SingleAsset(iconItem.package, iconItem.localPath);
+          let f = new SingleAsset(iconItem.localPath);
           f._iconFile = true;
-          this._allSingleFileAsset[iconItem.package] = f;
+          this._allSingleFileAsset[iconItem.localPath] = f;
+          //标记有图标
+          item._iconLocalPath = iconItem.localPath;
         }
       }
     }//for
@@ -237,8 +239,8 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
     // 修正资源localPath可能出现的路径异常
     let fixLocalPathError = () => {
-      singleFileNames.forEach(pck => {
-        let it = this._allSingleFileAsset[pck];
+      singleFileNames.forEach(lcp => {
+        let it = this._allSingleFileAsset[lcp];
         let idx = it.localPath.indexOf(this._projectFolderName);
         let tplocalStr = it.localPath.slice(idx + this._projectFolderName.length, it.localPath.length);
         //不知道ue4那边对文件路径分隔符是什么,都尝试一下
@@ -277,8 +279,8 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           });//stat
         });
       };//checkStat
-      return Promise.all(singleFileNames.map(pck => {
-        let it = this._allSingleFileAsset[pck];
+      return Promise.all(singleFileNames.map(lcp => {
+        let it = this._allSingleFileAsset[lcp];
         return limit(() => checkStat(it));
       }));
     };//checkAssetStat
@@ -299,7 +301,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
             return;
           }
 
-          let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.package, it._modifiedTime, it._size);
+          let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.localPath, it._modifiedTime, it._size);
           // console.log(111, _md5);
           if (!_md5) {
             md5File(it.localPath, (err, hash) => {
@@ -308,7 +310,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
                 return;
               }
               it._md5 = hash;
-              this.assetMd5CacheSrv.cacheMd5(it.package, hash, it._modifiedTime, it._size);
+              this.assetMd5CacheSrv.cacheMd5(it.localPath, hash, it._modifiedTime, it._size);
               resolve();
               return;
             });
@@ -319,8 +321,8 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           }
         });
       };//calcMD5
-      return Promise.all(singleFileNames.map(pck => {
-        let it = this._allSingleFileAsset[pck];
+      return Promise.all(singleFileNames.map(lcp => {
+        let it = this._allSingleFileAsset[lcp];
         return limit(() => calcMD5(it));
       }));
     };//calcFileMD5
@@ -347,8 +349,8 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           });//nodeJsAPIUploadFile
         });
       };//uploadIcon
-      return Promise.all(singleFileNames.map(pck => {
-        let it = this._allSingleFileAsset[pck];
+      return Promise.all(singleFileNames.map(lcp => {
+        let it = this._allSingleFileAsset[lcp];
         return limit(() => uploadIcon(it));
       }));
     };//uploadIconFiles
@@ -363,8 +365,9 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
             return;
           }
 
-          this.srcAssetSrv.checkFileExistByMd5(it._md5).subscribe(exist => {
-            if (exist) {
+          this.srcAssetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
+            if (url) {
+              it._url = url;
               resolve();
               return;
             }
@@ -386,8 +389,8 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
         });
       };//uploadSrcFile
 
-      return Promise.all(singleFileNames.map(pck => {
-        let it = this._allSingleFileAsset[pck];
+      return Promise.all(singleFileNames.map(lcp => {
+        let it = this._allSingleFileAsset[lcp];
         return limit(() => uploadSrcFile(it));
       }));
     };//uploadSrcAssetFiles
@@ -403,28 +406,31 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
             return;
           }
 
-          this.assetSrv.checkFileExistByMd5(it._md5).subscribe(exist => {
-            if (exist) {
+          this.assetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
+            if (url) {
+              it._url = url;
               resolve();
               return;
             }
 
             nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/files/stream`, (err, data) => {
               if (err) {
-                console.error('上传依赖文件异常:', err);
+                console.error('上传依赖文件异常 nodejs:', err);
                 resolve();
                 return;
               }
+              // console.log('sdfsdf', data, data.url);
+              it._url = data.url;
               resolve();
             });//nodeJsAPIUploadFile
           }, err => {
-            console.log("上传依赖文件异常:", err);
+            console.log("上传依赖文件异常 subscribe:", err);
             resolve();
           });//subscribe
         });//
       };//uploadFile
-      return Promise.all(singleFileNames.map(pck => {
-        let it = this._allSingleFileAsset[pck];
+      return Promise.all(singleFileNames.map(lcp => {
+        let it = this._allSingleFileAsset[lcp];
         return limit(() => uploadFile(it));
       }));
     };//uploadSingleFiles
@@ -442,32 +448,59 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
           let clientAsset = {};
           clientAsset["name"] = it.name;
-          let f = this._allSingleFileAsset[it.package];
+          let f = this._allSingleFileAsset[it.localPath];
           clientAsset["cookedAssetId"] = f._md5;
-          clientAsset["cookedAssetPackageName"] = f.package;
-
-          if (it.srcFile && it.srcFile.package && this._allSingleFileAsset[it.srcFile.package]) {
-            let f = this._allSingleFileAsset[it.srcFile.package];
+          clientAsset["packageName"] = it.package;
+          if (it.srcFile && it.srcFile.localPath && this._allSingleFileAsset[it.srcFile.localPath]) {
+            f = this._allSingleFileAsset[it.srcFile.localPath];
             clientAsset["sourceAssetId"] = f._md5;
-            clientAsset["sourceAssetPackageName"] = f.package;
           }
-          if (it.unCookedFile && it.unCookedFile.package && this._allSingleFileAsset[it.unCookedFile.package]) {
-            let f = this._allSingleFileAsset[it.unCookedFile.package];
+          if (it.unCookedFile && it.unCookedFile.localPath && this._allSingleFileAsset[it.unCookedFile.localPath]) {
+            f = this._allSingleFileAsset[it.unCookedFile.localPath];
             clientAsset["unCookedAssetId"] = f._md5;
-            clientAsset["unCookedAssetPackageName"] = f.package;
           }
+          if (it._iconLocalPath) {
+            f = this._allSingleFileAsset[it._iconLocalPath];
+            clientAsset["icon"] = f._url;
+          }
+          if (it.dependencies) {
+            let dependencyStr = "";
+            let dcpNs = Object.keys(it.dependencies);
+            if (dcpNs.length > 0) {
+              for (let pck of dcpNs) {
+                let lcp = package2SingleFileMap[pck];
+                let f = this._allSingleFileAsset[lcp];
+                //不存在的是icon
+                if (f) {
+                  dependencyStr += `${f._url},${pck};`;
+                }
+              }
+              clientAsset["dependencies"] = dependencyStr;
+            }
 
- 
+          }
+          if (it.tags) {
+            let propertyStr = "";
+            let tgNs = Object.keys(it.tags);
+            if (tgNs.length > 0) {
+              for (let k of tgNs) {
+                propertyStr += `${k}=${it.tags[k]};`;
+              }
+              clientAsset["properties"] = propertyStr;
+            }
+          }
 
 
           if (it.class.indexOf("World") > -1) {
+            console.log('package name:', it.package);
             this.mapSrv.post(clientAsset as Map).subscribe(rs => {
               console.log('map created', rs);
               resolve();
             }, err => {
-              console.error("地图创建异常:", err);
+              console.error("Map创建异常:", err);
               resolve();
             });
+            // resolve();
           }
           else if (it.class.indexOf("Texture") > -1) {
             resolve();
