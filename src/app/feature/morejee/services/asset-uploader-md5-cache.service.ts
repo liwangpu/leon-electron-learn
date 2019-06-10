@@ -21,7 +21,7 @@ export class AssetUploaderMd5CacheService {
   constructor() {
     let tmpDir = os.tmpdir();
     this._cacheFileName = path.join(tmpDir, 'asset-upload-md5-cache.json');
-    // console.log('md5 cache file', this._cacheFileName);
+    console.log('md5 cache file', this._cacheFileName);
   }//constructor
 
   loadCacheFile() {
