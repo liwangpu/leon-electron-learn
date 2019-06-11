@@ -5,7 +5,7 @@ import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
 @Injectable()
 export class MessageCenterService {
 
-  constructor(private translateSrv: TranslateService, private snackBarSrv: MatSnackBar) {
+  constructor(private translate: TranslateService, private snackBarSrv: MatSnackBar) {
 
   }//constructor
 
@@ -15,10 +15,18 @@ export class MessageCenterService {
       horizontalPosition: "center"
     };
     if (translate) {
-      this.translateSrv.get(msg).subscribe(message => this.snackBarSrv.open(message, null, options));
+      this.translate.get(msg).subscribe(message => this.snackBarSrv.open(message, null, options));
     }
     else {
       this.snackBarSrv.open(msg, null, options);
     }
   }//message
+
+  operateSuccessfully() {
+    this.message('message.operateSuccessfully', true);
+  }//operateSuccessfully
+
+  saveSuccessfully() {
+    this.message('message.saveSuccessfully', true);
+  }//保存成功
 }

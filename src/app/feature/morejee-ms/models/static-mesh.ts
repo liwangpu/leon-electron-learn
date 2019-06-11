@@ -1,4 +1,4 @@
-export class Map {
+export class StaticMesh {
     id: string;
     name: string;
     packageName: string;

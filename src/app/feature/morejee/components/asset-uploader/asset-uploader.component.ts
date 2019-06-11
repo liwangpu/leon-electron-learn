@@ -6,7 +6,7 @@ import * as fsExtra from "fs-extra";
 import * as  md5File from 'md5-file';
 import { MatDialog } from '@angular/material/dialog';
 import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
-import { FileassetService, SrcClientAssetService, MapService, Map } from '@app/morejee-ms';
+import { FileassetService, SrcClientAssetService, MapService, Map, TextureService, Texture, MaterialService, Material, StaticMeshService, StaticMesh } from '@app/morejee-ms';
 import * as request from 'request';
 import * as promiseLimit from 'promise-limit';
 import { AssetUploaderMd5CacheService } from '../../services/asset-uploader-md5-cache.service';
@@ -28,14 +28,8 @@ class DataMap {
   //客户端资源,是需要创建材质模型等对象的
   _clientAsset: boolean;
   _iconLocalPath: string;
-  // _iconUrl: string;
-  // _sourceClientAssetMd5: string;
-  // _sourceClientAssetUrl: string;
-  // _unCookedClientAssetUrl: string;
-  // _fileAssetId: string;
-  // _md5: string;
-  // _modifiedTime: number;
-  // _size: number;
+  //创建实体对象后的Id,比如map,texture的id
+  _objId: string;
 }
 
 class AssetDependency {
@@ -84,7 +78,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   get allAssetCount() {
     return Object.keys(this.allAsset).length;
   }
-  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected srcAssetSrv: SrcClientAssetService, protected mapSrv: MapService) {
+  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected srcAssetSrv: SrcClientAssetService, protected mapSrv: MapService, protected textureSrv: TextureService, protected materialSrv: MaterialService, protected meshSrv: StaticMeshService) {
 
   }//constructor
 
@@ -120,6 +114,36 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     // this.assetSrv.checkFileExistByMd5("03328fc6226b5ae926445a454618acbc1").subscribe(exist => {
     //   console.log(111, exist, typeof exist);
     // });
+
+
+    // let meshs = [];
+    // for (let i = 1; i <= 500; i++) {
+    //   let m = new StaticMesh();
+    //   m.name = "test mesh " + i;
+    //   m.packageName = "/tm/" + i;
+    //   m.cookedAssetId = "c" + i;
+    //   m.unCookedAssetId = "c" + i;
+    //   m.sourceAssetId = "s" + i;
+    //   m["createProduct"] = true;
+    //   meshs.push(m);
+    // }
+
+
+    // let limit = promiseLimit(50);
+    // let createMesh = (mesh: StaticMesh) => {
+    //   return new Promise((resolve, reject) => {
+    //     this.meshSrv.post(mesh).subscribe(rs => {
+    //       console.log('成功', rs);
+    //       resolve();
+    //     }, err => {
+    //       console.log('失败', err);
+    //       resolve();
+    //     });
+    //   });
+    // };//createMesh
+    // Promise.all(meshs.map(m => {
+    //   return limit(() => createMesh(m));
+    // }));
 
 
   }//test
@@ -446,6 +470,11 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
             return;
           }
 
+          if (it._objId) {
+            resolve();
+            return;
+          }
+
           let clientAsset = {};
           clientAsset["name"] = it.name;
           let f = this._allSingleFileAsset[it.localPath];
@@ -492,9 +521,8 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
 
           if (it.class.indexOf("World") > -1) {
-            console.log('package name:', it.package);
             this.mapSrv.post(clientAsset as Map).subscribe(rs => {
-              console.log('map created', rs);
+              it._objId = rs.id;
               resolve();
             }, err => {
               console.error("Map创建异常:", err);
@@ -503,13 +531,32 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
             // resolve();
           }
           else if (it.class.indexOf("Texture") > -1) {
-            resolve();
+            this.textureSrv.post(clientAsset as Texture).subscribe(rs => {
+              it._objId = rs.id;
+              resolve();
+            }, err => {
+              console.error("Texture创建异常:", err);
+              resolve();
+            });
           }
           else if (it.class.indexOf("Material") > -1) {
-            resolve();
+            this.materialSrv.post(clientAsset as Material).subscribe(rs => {
+              it._objId = rs.id;
+              resolve();
+            }, err => {
+              console.error("Material创建异常:", err);
+              resolve();
+            });
           }
           else if (it.class.indexOf("StaticMesh") > -1) {
-            resolve();
+            clientAsset["createProduct"] = true;
+            this.meshSrv.post(clientAsset as StaticMesh).subscribe(rs => {
+              it._objId = rs.id;
+              resolve();
+            }, err => {
+              console.error("StaticMesh创建异常:", err);
+              resolve();
+            });
           }
           else {
             console.error("什么,还有class为其他类型:", it.class);
@@ -524,8 +571,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     };//createClientObject
 
     fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(uploadSrcAssetFiles).then(uploadSingleFiles).then(createClientObject).then(() => {
-      console.log('finished!');
-      console.log(111, this._allSingleFileAsset);
+      this.messageSrv.operateSuccessfully();
       this._uploading = false;
       this.assetMd5CacheSrv.persistCache2File();
     }, err => {

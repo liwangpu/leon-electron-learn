@@ -1,4 +1,4 @@
-export class Map {
+export class Material {
     id: string;
     name: string;
     packageName: string;

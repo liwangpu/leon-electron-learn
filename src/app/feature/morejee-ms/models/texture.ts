@@ -1,4 +1,4 @@
-export class Map {
+export class Texture {
     id: string;
     name: string;
     packageName: string;
@@ -7,5 +7,4 @@ export class Map {
     sourceAssetId?: string;
     icon?: string;
     dependencies?: string;
-    properties?: string;
 }
