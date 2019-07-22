@@ -25,11 +25,6 @@ class DataMap {
   dependencies: { [key: string]: AssetDependency };
   srcFile: AssetDependency;
   unCookedFile: AssetDependency;
-  //客户端资源,是需要创建材质模型等对象的
-  _clientAsset: boolean;
-  _iconLocalPath: string;
-  //创建实体对象后的Id,比如map,texture的id
-  _objId: string;
 }
 
 class AssetDependency {
@@ -71,8 +66,7 @@ class AnalysisFileSetStructure {
 class clientAsset {
   objId: string;
   name: string;
-  packageName: string;
-  dependencies: clientAssetDependency[];
+  dependencies: string[];
   clientAssetType: clientAssetType;
   srcPackageName: string;
   cookedPackageName: string;
@@ -80,11 +74,11 @@ class clientAsset {
   iconPackageName: string;
 }
 
-//资源对象的依赖项
-class clientAssetDependency {
-  packageName: string;
-  url: string;
-}
+// //资源对象的依赖项
+// class clientAssetDependency {
+//   packageName: string;
+//   url: string;
+// }
 
 //单个资源文件,包括资源对象和依赖项还有图标文件
 class AnalysisFile {
@@ -98,23 +92,23 @@ class AnalysisFile {
 }
 
 
-/**
- * 从配置文件读出的文件有层级结构
- * 修正路径和计算md5次数重复,所以拆解成单文件格式
- */
-class SingleAsset {
-  localPath: string;
-  _notExist: boolean;
-  _iconFile: boolean;
-  _srcAsset: boolean;
-  _url: string;
-  _md5: string;
-  _modifiedTime: number;
-  _size: number;
-  constructor(lcp: string) {
-    this.localPath = lcp;
-  }
-}
+// /**
+//  * 从配置文件读出的文件有层级结构
+//  * 修正路径和计算md5次数重复,所以拆解成单文件格式
+//  */
+// class SingleAsset {
+//   localPath: string;
+//   _notExist: boolean;
+//   _iconFile: boolean;
+//   _srcAsset: boolean;
+//   _url: string;
+//   _md5: string;
+//   _modifiedTime: number;
+//   _size: number;
+//   constructor(lcp: string) {
+//     this.localPath = lcp;
+//   }
+// }
 
 @Component({
   selector: 'morejee-asset-uploader',
@@ -124,14 +118,15 @@ class SingleAsset {
 export class AssetUploaderComponent implements OnInit, OnDestroy {
 
 
-  private _allSingleFileAsset: { [key: string]: SingleAsset } = {};
+  // private _allSingleFileAsset: { [key: string]: SingleAsset } = {};
+  _analyzeFileStructure = new AnalysisFileSetStructure();
   _analyzeFileStructureProcess = false;
   _uploading = false;
   _uploadingProcessStep = 0;
-  allAsset: { [key: string]: DataMap } = {};
-  get allAssetCount() {
-    return Object.keys(this.allAsset).length;
-  }
+  // allAsset: { [key: string]: DataMap } = {};
+  // get allAssetCount() {
+  //   return Object.keys(this.allAsset).length;
+  // }
 
 
 
@@ -169,7 +164,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
   clearAssetList() {
     this._projectDir = "";
-    this.allAsset = {};
+    // this.allAsset = {};
   }//clearAssetList
 
   selectProjectDir() {
@@ -216,17 +211,46 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               let it = assetList.dataMap[k];
               let ast = new clientAsset();
               ast.name = it.name;
-              ast.cookedPackageName = it.package;
-              ast.srcPackageName = it.srcFile && it.srcFile.package ? it.srcFile.package : '';
+
+              //分析cooked,uncooked,source单文件,因为这几个单文件不在顶层dependencies里面
+              if (it.package) {
+                ast.cookedPackageName = it.package;
+                let singleFile = new AnalysisFile();
+                singleFile.package = it.package;
+                singleFile.name = it.name;
+                singleFile.localPath = it.localPath;
+              }
+
+              if (it.srcFile && it.srcFile.package) {
+                ast.srcPackageName = it.srcFile.package;
+                let singleFile = new AnalysisFile();
+                singleFile.package = it.srcFile.package;
+                singleFile.name = it.srcFile.name;
+                singleFile.localPath = it.srcFile.localPath;
+              }
+
+
+
+
+
+
               ast.unCookedPackageName = it.unCookedFile && it.unCookedFile.package ? it.unCookedFile.package : '';
+
+
+
+
+
               // ast.iconPackageName=it.dependencies
+
+              ast.dependencies = [];
+              //分析依赖项,随便分析icon文件
               //icon文件问dependencies中开头为UploadIcons的依赖项
-              for (let k in assetList.dependencies) {
-                let dpc = assetList.dependencies[k];
-                if (k.indexOf('UploadIcons') > -1) {
-                  ast.iconPackageName = k;
-                  break;
-                }//if
+              for (let dpc in it.dependencies) {
+                // let dpc = assetList.dependencies[k];
+                ast.dependencies.push(dpc);
+                if (dpc.indexOf('UploadIcons') > -1) {
+                  ast.iconPackageName = dpc;
+                }//if 
               }//for
 
               // ast.packageName = it.package;
@@ -248,8 +272,8 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
                 ast.clientAssetType = clientAssetType.other;
 
 
-
-              // console.log(7, ast);
+              if (ast.cookedPackageName == '/Game/Meshes/10062')
+                console.log(7, ast);
               // console.log(8, it);
             }//for
           }//if
@@ -335,365 +359,365 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     this._uploading = true;
 
 
-    let allPackageNames = Object.keys(this.allAsset);
+    // let allPackageNames = Object.keys(this.allAsset);
 
-    let package2SingleFileMap = {};
-    //提取所有单文件
-    for (let pck of allPackageNames) {
-      let item = this.allAsset[pck];
-      //顶级文件
-      this._allSingleFileAsset[item.localPath] = new SingleAsset(item.localPath);
-      package2SingleFileMap[item.package] = item.localPath;
-      //source file
-      if (item.srcFile && item.srcFile.localPath) {
-        let f = new SingleAsset(item.srcFile.localPath);
-        f._srcAsset = true;
-        this._allSingleFileAsset[item.srcFile.localPath] = f;
-      }
-      //uncooked file
-      if (item.unCookedFile && item.unCookedFile.localPath) {
-        let f = new SingleAsset(item.unCookedFile.localPath);
-        f._srcAsset = true;
-        this._allSingleFileAsset[item.unCookedFile.localPath] = f;
-      }
-      //icon file
-      let dcpPackageNames = Object.keys(item.dependencies);
-      if (dcpPackageNames.length > 0) {
-        let iconPck = dcpPackageNames.filter(x => x.indexOf('UploadIcons') > -1)[0];
-        if (iconPck) {
-          let iconItem = item.dependencies[iconPck];
-          let f = new SingleAsset(iconItem.localPath);
-          f._iconFile = true;
-          this._allSingleFileAsset[iconItem.localPath] = f;
-          //标记有图标
-          item._iconLocalPath = iconItem.localPath;
-        }
-      }
-    }//for
+    // let package2SingleFileMap = {};
+    // //提取所有单文件
+    // for (let pck of allPackageNames) {
+    //   let item = this.allAsset[pck];
+    //   //顶级文件
+    //   this._allSingleFileAsset[item.localPath] = new SingleAsset(item.localPath);
+    //   package2SingleFileMap[item.package] = item.localPath;
+    //   //source file
+    //   if (item.srcFile && item.srcFile.localPath) {
+    //     let f = new SingleAsset(item.srcFile.localPath);
+    //     f._srcAsset = true;
+    //     this._allSingleFileAsset[item.srcFile.localPath] = f;
+    //   }
+    //   //uncooked file
+    //   if (item.unCookedFile && item.unCookedFile.localPath) {
+    //     let f = new SingleAsset(item.unCookedFile.localPath);
+    //     f._srcAsset = true;
+    //     this._allSingleFileAsset[item.unCookedFile.localPath] = f;
+    //   }
+    //   //icon file
+    //   let dcpPackageNames = Object.keys(item.dependencies);
+    //   if (dcpPackageNames.length > 0) {
+    //     let iconPck = dcpPackageNames.filter(x => x.indexOf('UploadIcons') > -1)[0];
+    //     if (iconPck) {
+    //       let iconItem = item.dependencies[iconPck];
+    //       let f = new SingleAsset(iconItem.localPath);
+    //       f._iconFile = true;
+    //       this._allSingleFileAsset[iconItem.localPath] = f;
+    //       //标记有图标
+    //       item._iconLocalPath = iconItem.localPath;
+    //     }
+    //   }
+    // }//for
 
-    let singleFileNames = Object.keys(this._allSingleFileAsset);
+    // let singleFileNames = Object.keys(this._allSingleFileAsset);
 
-    let nodeJsAPIUploadFile = (localPath: string, server: string, callback: (err: any, data?: any) => void) => {
-      let uploadReq = request.post(server, { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(localPath), timeout: 600000 } }, (err, rs, body) => {
-        if (rs.statusCode >= 300 || rs.statusCode < 200) {
-          callback(rs.statusMessage);
-          return;
-        }
-        callback(null, body);
-      });
-      fs.createReadStream(localPath).pipe(uploadReq);
-    };//nodeJsUploadFile
+    // let nodeJsAPIUploadFile = (localPath: string, server: string, callback: (err: any, data?: any) => void) => {
+    //   let uploadReq = request.post(server, { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(localPath), timeout: 600000 } }, (err, rs, body) => {
+    //     if (rs.statusCode >= 300 || rs.statusCode < 200) {
+    //       callback(rs.statusMessage);
+    //       return;
+    //     }
+    //     callback(null, body);
+    //   });
+    //   fs.createReadStream(localPath).pipe(uploadReq);
+    // };//nodeJsUploadFile
 
-    // 修正资源localPath可能出现的路径异常
-    let fixLocalPathError = () => {
-      singleFileNames.forEach(lcp => {
-        let it = this._allSingleFileAsset[lcp];
-        let idx = it.localPath.indexOf(this._projectFolderName);
-        let tplocalStr = it.localPath.slice(idx + this._projectFolderName.length, it.localPath.length);
-        //不知道ue4那边对文件路径分隔符是什么,都尝试一下
-        let sep = '/';
-        if (tplocalStr.indexOf(sep) == -1)
-          sep = "\\";
-        let tarr = tplocalStr.split(sep);
-        let prjName = tarr.join(path.sep);
-        it.localPath = this._projectDir + prjName;
-      });//forEach
-      return Promise.resolve();
-    }//fixLocalPathError
+    // // 修正资源localPath可能出现的路径异常
+    // let fixLocalPathError = () => {
+    //   singleFileNames.forEach(lcp => {
+    //     let it = this._allSingleFileAsset[lcp];
+    //     let idx = it.localPath.indexOf(this._projectFolderName);
+    //     let tplocalStr = it.localPath.slice(idx + this._projectFolderName.length, it.localPath.length);
+    //     //不知道ue4那边对文件路径分隔符是什么,都尝试一下
+    //     let sep = '/';
+    //     if (tplocalStr.indexOf(sep) == -1)
+    //       sep = "\\";
+    //     let tarr = tplocalStr.split(sep);
+    //     let prjName = tarr.join(path.sep);
+    //     it.localPath = this._projectDir + prjName;
+    //   });//forEach
+    //   return Promise.resolve();
+    // }//fixLocalPathError
 
-    //检测文件修改时间信息,用来校验md5,不能只根据package记录md5,还应该加上修改时间
-    let checkAssetStat = () => {
-      this._uploadingProcessStep = 1;
-      let limit = promiseLimit(20);
-      let checkStat = (it: SingleAsset) => {
-        return new Promise((resolve) => {
-          if (it._modifiedTime) {
-            resolve();
-            return;
-          }
+    // //检测文件修改时间信息,用来校验md5,不能只根据package记录md5,还应该加上修改时间
+    // let checkAssetStat = () => {
+    //   this._uploadingProcessStep = 1;
+    //   let limit = promiseLimit(20);
+    //   let checkStat = (it: SingleAsset) => {
+    //     return new Promise((resolve) => {
+    //       if (it._modifiedTime) {
+    //         resolve();
+    //         return;
+    //       }
 
-          fs.stat(it.localPath, (err, stat) => {
-            if (err) {
-              //文件可能不存在,不可以直接终止程序
-              console.warn(`发现文件不存在,具体路径为:${it.localPath}`);
-              it._notExist = true;
-              resolve();
-              return;
-            }
-            it._modifiedTime = stat.mtime.getTime();
-            it._size = stat.size;
-            resolve();
-          });//stat
-        });
-      };//checkStat
-      return Promise.all(singleFileNames.map(lcp => {
-        let it = this._allSingleFileAsset[lcp];
-        return limit(() => checkStat(it));
-      }));
-    };//checkAssetStat
+    //       fs.stat(it.localPath, (err, stat) => {
+    //         if (err) {
+    //           //文件可能不存在,不可以直接终止程序
+    //           console.warn(`发现文件不存在,具体路径为:${it.localPath}`);
+    //           it._notExist = true;
+    //           resolve();
+    //           return;
+    //         }
+    //         it._modifiedTime = stat.mtime.getTime();
+    //         it._size = stat.size;
+    //         resolve();
+    //       });//stat
+    //     });
+    //   };//checkStat
+    //   return Promise.all(singleFileNames.map(lcp => {
+    //     let it = this._allSingleFileAsset[lcp];
+    //     return limit(() => checkStat(it));
+    //   }));
+    // };//checkAssetStat
 
-    //计算文件的md5信息
-    let calcFileMD5 = () => {
-      this._uploadingProcessStep = 2;
-      let limit = promiseLimit(10);
-      let calcMD5 = (it: SingleAsset) => {
-        return new Promise((resolve, reject) => {
-          if (it._notExist) {
-            resolve();
-            return;
-          }
+    // //计算文件的md5信息
+    // let calcFileMD5 = () => {
+    //   this._uploadingProcessStep = 2;
+    //   let limit = promiseLimit(10);
+    //   let calcMD5 = (it: SingleAsset) => {
+    //     return new Promise((resolve, reject) => {
+    //       if (it._notExist) {
+    //         resolve();
+    //         return;
+    //       }
 
-          if (it._md5) {
-            resolve();
-            return;
-          }
+    //       if (it._md5) {
+    //         resolve();
+    //         return;
+    //       }
 
-          let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.localPath, it._modifiedTime, it._size);
-          // console.log(111, _md5);
-          if (!_md5) {
-            md5File(it.localPath, (err, hash) => {
-              if (err) {
-                reject(err.message);
-                return;
-              }
-              it._md5 = hash;
-              this.assetMd5CacheSrv.cacheMd5(it.localPath, hash, it._modifiedTime, it._size);
-              resolve();
-              return;
-            });
-          }
-          else {
-            it._md5 = _md5;
-            resolve();
-          }
-        });
-      };//calcMD5
-      return Promise.all(singleFileNames.map(lcp => {
-        let it = this._allSingleFileAsset[lcp];
-        return limit(() => calcMD5(it));
-      }));
-    };//calcFileMD5
+    //       let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.localPath, it._modifiedTime, it._size);
+    //       // console.log(111, _md5);
+    //       if (!_md5) {
+    //         md5File(it.localPath, (err, hash) => {
+    //           if (err) {
+    //             reject(err.message);
+    //             return;
+    //           }
+    //           it._md5 = hash;
+    //           this.assetMd5CacheSrv.cacheMd5(it.localPath, hash, it._modifiedTime, it._size);
+    //           resolve();
+    //           return;
+    //         });
+    //       }
+    //       else {
+    //         it._md5 = _md5;
+    //         resolve();
+    //       }
+    //     });
+    //   };//calcMD5
+    //   return Promise.all(singleFileNames.map(lcp => {
+    //     let it = this._allSingleFileAsset[lcp];
+    //     return limit(() => calcMD5(it));
+    //   }));
+    // };//calcFileMD5
 
-    //上传icon
-    let uploadIconFiles = () => {
-      this._uploadingProcessStep = 3;
-      let limit = promiseLimit(20);
-      let uploadIcon = (it: SingleAsset) => {
-        return new Promise((resolve, reject) => {
-          if (it._notExist || !it._iconFile) {
-            resolve();
-            return;
-          }
+    // //上传icon
+    // let uploadIconFiles = () => {
+    //   this._uploadingProcessStep = 3;
+    //   let limit = promiseLimit(20);
+    //   let uploadIcon = (it: SingleAsset) => {
+    //     return new Promise((resolve, reject) => {
+    //       if (it._notExist || !it._iconFile) {
+    //         resolve();
+    //         return;
+    //       }
 
-          nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/icons/stream`, (err, url) => {
-            if (err) {
-              console.error('上传图标异常:', err);
-              resolve();
-              return;
-            }
-            it._url = url;
-            resolve();
-          });//nodeJsAPIUploadFile
-        });
-      };//uploadIcon
-      return Promise.all(singleFileNames.map(lcp => {
-        let it = this._allSingleFileAsset[lcp];
-        return limit(() => uploadIcon(it));
-      }));
-    };//uploadIconFiles
+    //       nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/icons/stream`, (err, url) => {
+    //         if (err) {
+    //           console.error('上传图标异常:', err);
+    //           resolve();
+    //           return;
+    //         }
+    //         it._url = url;
+    //         resolve();
+    //       });//nodeJsAPIUploadFile
+    //     });
+    //   };//uploadIcon
+    //   return Promise.all(singleFileNames.map(lcp => {
+    //     let it = this._allSingleFileAsset[lcp];
+    //     return limit(() => uploadIcon(it));
+    //   }));
+    // };//uploadIconFiles
 
-    //上传原文件
-    let uploadSrcAssetFiles = () => {
-      this._uploadingProcessStep = 4;
-      let limit = promiseLimit(20);
-      let uploadSrcFile = (it: SingleAsset) => {
-        return new Promise((resolve, reject) => {
-          if (it._notExist || !it._srcAsset) {
-            resolve();
-            return;
-          }
+    // //上传原文件
+    // let uploadSrcAssetFiles = () => {
+    //   this._uploadingProcessStep = 4;
+    //   let limit = promiseLimit(20);
+    //   let uploadSrcFile = (it: SingleAsset) => {
+    //     return new Promise((resolve, reject) => {
+    //       if (it._notExist || !it._srcAsset) {
+    //         resolve();
+    //         return;
+    //       }
 
-          this.srcAssetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
-            if (url) {
-              it._url = url;
-              resolve();
-              return;
-            }
+    //       this.srcAssetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
+    //         if (url) {
+    //           it._url = url;
+    //           resolve();
+    //           return;
+    //         }
 
-            nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/srcClientAssets/stream`, (err, url) => {
-              if (err) {
-                console.error('上传source file异常:', err);
-                resolve();
-                return;
-              }
-              // console.log(6, url);
-              it._url = url;
-              resolve();
-            });//nodeJsAPIUploadFile
-          }, err => {
-            console.log("上传源文件异常:", err);
-            resolve();
-          });//subscribe
-        });
-      };//uploadSrcFile
+    //         nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/srcClientAssets/stream`, (err, url) => {
+    //           if (err) {
+    //             console.error('上传source file异常:', err);
+    //             resolve();
+    //             return;
+    //           }
+    //           // console.log(6, url);
+    //           it._url = url;
+    //           resolve();
+    //         });//nodeJsAPIUploadFile
+    //       }, err => {
+    //         console.log("上传源文件异常:", err);
+    //         resolve();
+    //       });//subscribe
+    //     });
+    //   };//uploadSrcFile
 
-      return Promise.all(singleFileNames.map(lcp => {
-        let it = this._allSingleFileAsset[lcp];
-        return limit(() => uploadSrcFile(it));
-      }));
-    };//uploadSrcAssetFiles
+    //   return Promise.all(singleFileNames.map(lcp => {
+    //     let it = this._allSingleFileAsset[lcp];
+    //     return limit(() => uploadSrcFile(it));
+    //   }));
+    // };//uploadSrcAssetFiles
 
-    //上传依赖文件
-    let uploadSingleFiles = () => {
-      this._uploadingProcessStep = 5;
-      let limit = promiseLimit(20);
-      let uploadFile = (it: SingleAsset) => {
-        return new Promise((resolve, reject) => {
-          if (it._notExist || it._iconFile || it._srcAsset) {
-            resolve();
-            return;
-          }
+    // //上传依赖文件
+    // let uploadSingleFiles = () => {
+    //   this._uploadingProcessStep = 5;
+    //   let limit = promiseLimit(20);
+    //   let uploadFile = (it: SingleAsset) => {
+    //     return new Promise((resolve, reject) => {
+    //       if (it._notExist || it._iconFile || it._srcAsset) {
+    //         resolve();
+    //         return;
+    //       }
 
-          this.assetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
-            // console.log('dep url:',url);
-            if (url) {
-              it._url = url;
-              resolve();
-              return;
-            }
+    //       this.assetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
+    //         // console.log('dep url:',url);
+    //         if (url) {
+    //           it._url = url;
+    //           resolve();
+    //           return;
+    //         }
 
-            nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/files/stream`, (err, data) => {
-              if (err) {
-                console.error('上传依赖文件异常 nodejs:', err);
-                resolve();
-                return;
-              }
-              // console.log('sdfsdf', data, data.url);
-              it._url = data.url;
-              resolve();
-            });//nodeJsAPIUploadFile
-          }, err => {
-            console.log("上传依赖文件异常 subscribe:", err);
-            resolve();
-          });//subscribe
-        });//
-      };//uploadFile
-      return Promise.all(singleFileNames.map(lcp => {
-        let it = this._allSingleFileAsset[lcp];
-        return limit(() => uploadFile(it));
-      }));
-    };//uploadSingleFiles
-
-
-    let createClientObject = () => {
-      this._uploadingProcessStep = 6;
-      let limit = promiseLimit(20);
-      let createObj = (it: DataMap) => {
-        return new Promise((resolve, reject) => {
-          if (!it._clientAsset) {
-            resolve();
-            return;
-          }
-
-          if (it._objId) {
-            resolve();
-            return;
-          }
-
-          let clientAsset = {};
-          clientAsset["name"] = it.name;
-          let f = this._allSingleFileAsset[it.localPath];
-          clientAsset["cookedAssetId"] = f._md5;
-          clientAsset["packageName"] = it.package;
-          if (it.srcFile && it.srcFile.localPath && this._allSingleFileAsset[it.srcFile.localPath]) {
-            f = this._allSingleFileAsset[it.srcFile.localPath];
-            clientAsset["sourceAssetId"] = f._md5;
-          }
-          if (it.unCookedFile && it.unCookedFile.localPath && this._allSingleFileAsset[it.unCookedFile.localPath]) {
-            f = this._allSingleFileAsset[it.unCookedFile.localPath];
-            clientAsset["unCookedAssetId"] = f._md5;
-          }
-          if (it._iconLocalPath) {
-            f = this._allSingleFileAsset[it._iconLocalPath];
-            clientAsset["icon"] = f._url;
-          }
-          if (it.dependencies) {
-            let dependencyStr = "";
-            let dcpNs = Object.keys(it.dependencies);
-            if (dcpNs.length > 0) {
-              for (let pck of dcpNs) {
-                let lcp = package2SingleFileMap[pck];
-                let f = this._allSingleFileAsset[lcp];
-                //不存在的是icon
-                if (f) {
-                  dependencyStr += `${f._url},${pck};`;
-                }
-              }
-              clientAsset["dependencies"] = dependencyStr;
-            }
-
-          }
-          if (it.tags) {
-            let propertyStr = "";
-            let tgNs = Object.keys(it.tags);
-            if (tgNs.length > 0) {
-              for (let k of tgNs) {
-                propertyStr += `${k}=${it.tags[k]};`;
-              }
-              clientAsset["properties"] = propertyStr;
-            }
-          }
+    //         nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/files/stream`, (err, data) => {
+    //           if (err) {
+    //             console.error('上传依赖文件异常 nodejs:', err);
+    //             resolve();
+    //             return;
+    //           }
+    //           // console.log('sdfsdf', data, data.url);
+    //           it._url = data.url;
+    //           resolve();
+    //         });//nodeJsAPIUploadFile
+    //       }, err => {
+    //         console.log("上传依赖文件异常 subscribe:", err);
+    //         resolve();
+    //       });//subscribe
+    //     });//
+    //   };//uploadFile
+    //   return Promise.all(singleFileNames.map(lcp => {
+    //     let it = this._allSingleFileAsset[lcp];
+    //     return limit(() => uploadFile(it));
+    //   }));
+    // };//uploadSingleFiles
 
 
-          if (it.class.indexOf("World") > -1) {
-            this.mapSrv.post(clientAsset as Map).subscribe(rs => {
-              it._objId = rs.id;
-              resolve();
-            }, err => {
-              console.error("Map创建异常:", err);
-              resolve();
-            });
-            // resolve();
-          }
-          else if (it.class.indexOf("Texture") > -1) {
-            this.textureSrv.post(clientAsset as Texture).subscribe(rs => {
-              it._objId = rs.id;
-              resolve();
-            }, err => {
-              console.error("Texture创建异常:", err);
-              resolve();
-            });
-          }
-          else if (it.class.indexOf("Material") > -1) {
-            this.materialSrv.post(clientAsset as Material).subscribe(rs => {
-              it._objId = rs.id;
-              resolve();
-            }, err => {
-              console.error("Material创建异常:", err);
-              resolve();
-            });
-          }
-          else if (it.class.indexOf("StaticMesh") > -1) {
-            clientAsset["createProduct"] = true;
-            this.meshSrv.post(clientAsset as StaticMesh).subscribe(rs => {
-              it._objId = rs.id;
-              resolve();
-            }, err => {
-              console.error("StaticMesh创建异常:", err);
-              resolve();
-            });
-          }
-          else {
-            console.error("什么,还有class为其他类型:", it.class);
-            resolve();
-          }
-        });
-      };//createObj
-      return Promise.all(allPackageNames.map(pck => {
-        let it = this.allAsset[pck];
-        return limit(() => createObj(it));
-      }));
-    };//createClientObject
+    // let createClientObject = () => {
+    //   this._uploadingProcessStep = 6;
+    //   let limit = promiseLimit(20);
+    //   let createObj = (it: DataMap) => {
+    //     return new Promise((resolve, reject) => {
+    //       if (!it._clientAsset) {
+    //         resolve();
+    //         return;
+    //       }
+
+    //       if (it._objId) {
+    //         resolve();
+    //         return;
+    //       }
+
+    //       let clientAsset = {};
+    //       clientAsset["name"] = it.name;
+    //       let f = this._allSingleFileAsset[it.localPath];
+    //       clientAsset["cookedAssetId"] = f._md5;
+    //       clientAsset["packageName"] = it.package;
+    //       if (it.srcFile && it.srcFile.localPath && this._allSingleFileAsset[it.srcFile.localPath]) {
+    //         f = this._allSingleFileAsset[it.srcFile.localPath];
+    //         clientAsset["sourceAssetId"] = f._md5;
+    //       }
+    //       if (it.unCookedFile && it.unCookedFile.localPath && this._allSingleFileAsset[it.unCookedFile.localPath]) {
+    //         f = this._allSingleFileAsset[it.unCookedFile.localPath];
+    //         clientAsset["unCookedAssetId"] = f._md5;
+    //       }
+    //       if (it._iconLocalPath) {
+    //         f = this._allSingleFileAsset[it._iconLocalPath];
+    //         clientAsset["icon"] = f._url;
+    //       }
+    //       if (it.dependencies) {
+    //         let dependencyStr = "";
+    //         let dcpNs = Object.keys(it.dependencies);
+    //         if (dcpNs.length > 0) {
+    //           for (let pck of dcpNs) {
+    //             let lcp = package2SingleFileMap[pck];
+    //             let f = this._allSingleFileAsset[lcp];
+    //             //不存在的是icon
+    //             if (f) {
+    //               dependencyStr += `${f._url},${pck};`;
+    //             }
+    //           }
+    //           clientAsset["dependencies"] = dependencyStr;
+    //         }
+
+    //       }
+    //       if (it.tags) {
+    //         let propertyStr = "";
+    //         let tgNs = Object.keys(it.tags);
+    //         if (tgNs.length > 0) {
+    //           for (let k of tgNs) {
+    //             propertyStr += `${k}=${it.tags[k]};`;
+    //           }
+    //           clientAsset["properties"] = propertyStr;
+    //         }
+    //       }
+
+
+    //       if (it.class.indexOf("World") > -1) {
+    //         this.mapSrv.post(clientAsset as Map).subscribe(rs => {
+    //           it._objId = rs.id;
+    //           resolve();
+    //         }, err => {
+    //           console.error("Map创建异常:", err);
+    //           resolve();
+    //         });
+    //         // resolve();
+    //       }
+    //       else if (it.class.indexOf("Texture") > -1) {
+    //         this.textureSrv.post(clientAsset as Texture).subscribe(rs => {
+    //           it._objId = rs.id;
+    //           resolve();
+    //         }, err => {
+    //           console.error("Texture创建异常:", err);
+    //           resolve();
+    //         });
+    //       }
+    //       else if (it.class.indexOf("Material") > -1) {
+    //         this.materialSrv.post(clientAsset as Material).subscribe(rs => {
+    //           it._objId = rs.id;
+    //           resolve();
+    //         }, err => {
+    //           console.error("Material创建异常:", err);
+    //           resolve();
+    //         });
+    //       }
+    //       else if (it.class.indexOf("StaticMesh") > -1) {
+    //         clientAsset["createProduct"] = true;
+    //         this.meshSrv.post(clientAsset as StaticMesh).subscribe(rs => {
+    //           it._objId = rs.id;
+    //           resolve();
+    //         }, err => {
+    //           console.error("StaticMesh创建异常:", err);
+    //           resolve();
+    //         });
+    //       }
+    //       else {
+    //         console.error("什么,还有class为其他类型:", it.class);
+    //         resolve();
+    //       }
+    //     });
+    //   };//createObj
+    //   return Promise.all(allPackageNames.map(pck => {
+    //     let it = this.allAsset[pck];
+    //     return limit(() => createObj(it));
+    //   }));
+    // };//createClientObject
 
     // fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadSrcAssetFiles).then(uploadSingleFiles).then(createClientObject).then(() => {
     //   this.messageSrv.operateSuccessfully();
