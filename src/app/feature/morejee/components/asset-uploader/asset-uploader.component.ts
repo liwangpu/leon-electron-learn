@@ -44,22 +44,20 @@ enum FileType {
   cookedAsset
 }
 
-enum clientAssetType {
-  map,
-  texture,
-  staticMesh,
-  material,
-  other
-}
 
 /**
  * 以上是配置文件原始的对象格式
  * 而该类是解读配置文件后整理的一个需要上传的数据结构
  */
 class AnalysisFileSetStructure {
-  packageNames: string[];
-  clientAssets: clientAsset[];
-  files: AnalysisFile[];
+  // packageNames: string[];
+  mapPackageNames: string[] = [];
+  texturePackageNames: string[] = [];
+  staticMeshPackageNames: string[] = [];
+  materialPackageNames: string[] = [];
+  iconPackageNames: string[] = [];
+  clientAssets: { [key: string]: clientAsset } = {};
+  files: { [key: string]: AnalysisFile } = {};
 }
 
 //资源对象
@@ -67,7 +65,6 @@ class clientAsset {
   objId: string;
   name: string;
   dependencies: string[];
-  clientAssetType: clientAssetType;
   srcPackageName: string;
   cookedPackageName: string;
   unCookedPackageName: string;
@@ -89,6 +86,14 @@ class AnalysisFile {
   size: number;
   modifiedTime: string;
   fileType: FileType;
+
+  static from(n: string, pck: string, lcpath: string): AnalysisFile {
+    let f = new AnalysisFile();
+    f.name = n;
+    f.package = pck;
+    f.localPath = lcpath;
+    return f;
+  }
 }
 
 
@@ -215,26 +220,23 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               //分析cooked,uncooked,source单文件,因为这几个单文件不在顶层dependencies里面
               if (it.package) {
                 ast.cookedPackageName = it.package;
-                let singleFile = new AnalysisFile();
-                singleFile.package = it.package;
-                singleFile.name = it.name;
-                singleFile.localPath = it.localPath;
+                this._analyzeFileStructure.files[it.package] = AnalysisFile.from(it.name, it.package, it.localPath);
               }
 
               if (it.srcFile && it.srcFile.package) {
                 ast.srcPackageName = it.srcFile.package;
-                let singleFile = new AnalysisFile();
-                singleFile.package = it.srcFile.package;
-                singleFile.name = it.srcFile.name;
-                singleFile.localPath = it.srcFile.localPath;
+                this._analyzeFileStructure.files[it.srcFile.package] = AnalysisFile.from(it.srcFile.name, it.srcFile.package, it.srcFile.localPath);
+              }
+
+
+              if (it.unCookedFile && it.unCookedFile.package) {
+                ast.unCookedPackageName = it.unCookedFile.package;
+                this._analyzeFileStructure.files[it.unCookedFile.package] = AnalysisFile.from(it.unCookedFile.name, it.unCookedFile.package, it.unCookedFile.localPath);
               }
 
 
 
-
-
-
-              ast.unCookedPackageName = it.unCookedFile && it.unCookedFile.package ? it.unCookedFile.package : '';
+              // ast.unCookedPackageName = it.unCookedFile && it.unCookedFile.package ? it.unCookedFile.package : '';
 
 
 
@@ -261,19 +263,19 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
 
               if (it.class.indexOf("World") > -1)
-                ast.clientAssetType = clientAssetType.map;
+                this._analyzeFileStructure.mapPackageNames.push(it.package);
               else if (it.class.indexOf("Texture") > -1)
-                ast.clientAssetType = clientAssetType.texture;
+                this._analyzeFileStructure.texturePackageNames.push(it.package);
               else if (it.class.indexOf("Material") > -1)
-                ast.clientAssetType = clientAssetType.material;
+                this._analyzeFileStructure.materialPackageNames.push(it.package);
               else if (it.class.indexOf("StaticMesh") > -1)
-                ast.clientAssetType = clientAssetType.staticMesh;
+                this._analyzeFileStructure.staticMeshPackageNames.push(it.package);
               else
-                ast.clientAssetType = clientAssetType.other;
+                console.warn(`出现一个不知道类型的class:${it.package}`);
 
 
-              if (ast.cookedPackageName == '/Game/Meshes/10062')
-                console.log(7, ast);
+              // if (ast.cookedPackageName == '/Game/Meshes/10062')
+              //   console.log(7, ast);
               // console.log(8, it);
             }//for
           }//if
@@ -292,7 +294,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     // this.messageSrv.message("什么鬼");
 
     checkAssetListFile(configPath).then(analyzeAllAssetFromConfig).then(() => {
-      console.log('成功!');
+      console.log('成功!', this._analyzeFileStructure);
       this._analyzeFileStructureProcess = false;
     }, err => {
       this.messageSrv.message(err, true);
