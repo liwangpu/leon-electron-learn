@@ -11,7 +11,7 @@ export class MessageCenterService {
 
   message(msg: string, translate?: boolean) {
     let options: MatSnackBarConfig = {
-      duration: 1000,
+      duration: 3500,
       horizontalPosition: "center"
     };
     if (translate) {

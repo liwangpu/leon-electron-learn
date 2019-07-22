@@ -6,7 +6,7 @@
       [disabled]='!_projectDir||_uploading' mat-stroked-button (click)='clearAssetList()'>清空</button>
     <button class="normal ml" [disabled]='_uploading' mat-stroked-button (click)='selectProjectDir()'>选择</button>
     <button class="normal ml" [disabled]='_uploading||!_projectDir' mat-stroked-button (click)='upload()'>上传</button>
-    <button class="normal ml clear" mat-stroked-button (click)='test()'>测试</button>
+    <!-- <button class="normal ml clear" mat-stroked-button (click)='test()'>测试</button> -->
   </div>
   <div class="content">
     <div class="asset-list">
@@ -21,17 +21,22 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let ky of allAsset|keyvalue;let idx=index;">
+          <!-- <tr *ngFor="let ky of allAsset|keyvalue;let idx=index;">
             <td>{{idx+1}}</td>
             <td class="lj">{{ky.key}}</td>
             <td class="lj">{{ky.value.name}}</td>
             <td class="lj">{{ky.value.class}}</td>
-            <!-- <td>4</td> -->
-          </tr>
+          </tr> -->
         </tbody>
       </table>
     </div>
-    <div class="upload-process" *ngIf='_uploading'>
+    <div class="work-process" *ngIf='_analyzeFileStructureProcess'>
+      <mat-spinner></mat-spinner>
+      <div class="msg">
+        <p class="active">正在解析资源文件</p>
+      </div>
+    </div>
+    <div class="work-process" *ngIf='_uploading'>
       <mat-spinner></mat-spinner>
       <div class="msg">
         <p [class.active]='_uploadingProcessStep==1'>收集文件信息</p>
@@ -44,7 +49,8 @@
     </div>
   </div>
   <div class="footer">
-    <p class="process" *ngIf='allAssetCount>0'>
-      {{'glossary.count'|translate}}：{{allAssetCount}}</p>
+    <!-- <p class="process" *ngIf='allAssetCount>0'>
+      {{'glossary.count'|translate}}：{{allAssetCount}}
+    </p> -->
   </div>
 </div>

@@ -42,6 +42,62 @@ class AssetDependency {
   objId: string;
 }
 
+enum FileType {
+  icon,
+  sourceAsset,
+  unCookedAsset,
+  cookedAsset
+}
+
+enum clientAssetType {
+  map,
+  texture,
+  staticMesh,
+  material,
+  other
+}
+
+/**
+ * 以上是配置文件原始的对象格式
+ * 而该类是解读配置文件后整理的一个需要上传的数据结构
+ */
+class AnalysisFileSetStructure {
+  packageNames: string[];
+  clientAssets: clientAsset[];
+  files: AnalysisFile[];
+}
+
+//资源对象
+class clientAsset {
+  objId: string;
+  name: string;
+  packageName: string;
+  dependencies: clientAssetDependency[];
+  clientAssetType: clientAssetType;
+  srcPackageName: string;
+  cookedPackageName: string;
+  unCookedPackageName: string;
+  iconPackageName: string;
+}
+
+//资源对象的依赖项
+class clientAssetDependency {
+  packageName: string;
+  url: string;
+}
+
+//单个资源文件,包括资源对象和依赖项还有图标文件
+class AnalysisFile {
+  name: string;
+  package: string;
+  localPath: string;
+  md5: string;
+  size: number;
+  modifiedTime: string;
+  fileType: FileType;
+}
+
+
 /**
  * 从配置文件读出的文件有层级结构
  * 修正路径和计算md5次数重复,所以拆解成单文件格式
@@ -67,17 +123,29 @@ class SingleAsset {
 })
 export class AssetUploaderComponent implements OnInit, OnDestroy {
 
-  //UE4项目文件夹名称
-  private _projectFolderName: string;
-  //UE4项目文件夹路径
+
   private _allSingleFileAsset: { [key: string]: SingleAsset } = {};
-  _projectDir = "";
+  _analyzeFileStructureProcess = false;
   _uploading = false;
   _uploadingProcessStep = 0;
   allAsset: { [key: string]: DataMap } = {};
   get allAssetCount() {
     return Object.keys(this.allAsset).length;
   }
+
+
+
+  //UE4项目文件夹名称
+  private _projectFolderName: string;
+  //UE4项目文件夹路径
+  _projectDir = "";
+
+
+
+
+
+
+
   constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected srcAssetSrv: SrcClientAssetService, protected mapSrv: MapService, protected textureSrv: TextureService, protected materialSrv: MaterialService, protected meshSrv: StaticMeshService) {
 
   }//constructor
@@ -88,9 +156,6 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.assetMd5CacheSrv.persistCache2File();
-
-
-
   }//ngOnDestroy
 
   toArrayBuffer(buf) {
@@ -102,56 +167,9 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     return ab;
   }
 
-  test() {
-    // let filePath = 'C:\\Users\\Leon\\Desktop\\AssetMinimalTemplate\\Saved\\Cooked\\WindowsNoEditor\\AssetMinimalTemplate\\Content\\EHOME-MAT\\20181224\\DiffuseTextures\\1-faxintietu\\85-danyi-nom3.uasset';
-
-    // md5File(filePath, (err, hash) => {
-    //   if (err) throw err
-
-    //   console.log(`The MD5 sum of LICENSE.md is: ${hash}`)
-    // });
-
-    // this.assetSrv.checkFileExistByMd5("03328fc6226b5ae926445a454618acbc1").subscribe(exist => {
-    //   console.log(111, exist, typeof exist);
-    // });
-
-
-    // let meshs = [];
-    // for (let i = 1; i <= 500; i++) {
-    //   let m = new StaticMesh();
-    //   m.name = "test mesh " + i;
-    //   m.packageName = "/tm/" + i;
-    //   m.cookedAssetId = "c" + i;
-    //   m.unCookedAssetId = "c" + i;
-    //   m.sourceAssetId = "s" + i;
-    //   m["createProduct"] = true;
-    //   meshs.push(m);
-    // }
-
-
-    // let limit = promiseLimit(50);
-    // let createMesh = (mesh: StaticMesh) => {
-    //   return new Promise((resolve, reject) => {
-    //     this.meshSrv.post(mesh).subscribe(rs => {
-    //       console.log('成功', rs);
-    //       resolve();
-    //     }, err => {
-    //       console.log('失败', err);
-    //       resolve();
-    //     });
-    //   });
-    // };//createMesh
-    // Promise.all(meshs.map(m => {
-    //   return limit(() => createMesh(m));
-    // }));
-
-
-  }//test
-
   clearAssetList() {
     this._projectDir = "";
     this.allAsset = {};
-    // this._allAssetDataMap = [];
   }//clearAssetList
 
   selectProjectDir() {
@@ -162,8 +180,17 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     let sdx = this._projectDir.lastIndexOf(path.sep);
     this._projectFolderName = this._projectDir.slice(sdx + 1, this._projectDir.length);
 
-    // 校验配置文件是否存在
+    /*
+    * 在项目文件夹有个txt的配置文件projectname/Saved/AssetMan/assetlist.txt,该配置文件是json格式的
+    * 记录着需要上传的资源信息
+    */
+
+    //配置文件路径
+    let configPath = path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt");
+
+    //校验配置文件是否存在
     let checkAssetListFile = (configPath: string) => {
+      this._analyzeFileStructureProcess = true;
       return new Promise((resolve, reject) => {
         fs.exists(configPath, exist => {
           if (exist) {
@@ -175,38 +202,134 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       });
     };//checkAssetListFile
 
-    //分析配置文件里面所包含的资源
+    //分析配置里面所包含的资源
     let analyzeAllAssetFromConfig = (configPath: string) => {
       return new Promise((resolve, reject) => {
         fsExtra.readJSON(configPath, { encoding: 'utf8' }, (err, assetList: AssetList) => {
           if (err) {
-            reject(err.message);
+            reject(`assetlist.txt JSON解析异常:${err}`);
             return;
           }
 
           if (assetList.dataMap) {
             for (let k in assetList.dataMap) {
               let it = assetList.dataMap[k];
-              it._clientAsset = true;
-              this.allAsset[it.package] = it;
-            }
+              let ast = new clientAsset();
+              ast.name = it.name;
+              ast.cookedPackageName = it.package;
+              ast.srcPackageName = it.srcFile && it.srcFile.package ? it.srcFile.package : '';
+              ast.unCookedPackageName = it.unCookedFile && it.unCookedFile.package ? it.unCookedFile.package : '';
+              // ast.iconPackageName=it.dependencies
+              //icon文件问dependencies中开头为UploadIcons的依赖项
+              for (let k in assetList.dependencies) {
+                let dpc = assetList.dependencies[k];
+                if (k.indexOf('UploadIcons') > -1) {
+                  ast.iconPackageName = k;
+                  break;
+                }//if
+              }//for
+
+              // ast.packageName = it.package;
+              // ast.name = it.name;
+
+              // it._clientAsset = true;
+              // this.allAsset[it.package] = it;
+
+
+              if (it.class.indexOf("World") > -1)
+                ast.clientAssetType = clientAssetType.map;
+              else if (it.class.indexOf("Texture") > -1)
+                ast.clientAssetType = clientAssetType.texture;
+              else if (it.class.indexOf("Material") > -1)
+                ast.clientAssetType = clientAssetType.material;
+              else if (it.class.indexOf("StaticMesh") > -1)
+                ast.clientAssetType = clientAssetType.staticMesh;
+              else
+                ast.clientAssetType = clientAssetType.other;
+
+
+
+              // console.log(7, ast);
+              // console.log(8, it);
+            }//for
           }//if
 
-          if (assetList.dependencies) {
-            for (let k in assetList.dependencies) {
-              let it = assetList.dependencies[k];
-              this.allAsset[it.package] = it;
-            }
-          }//if
+          // if (assetList.dependencies) {
+          //   for (let k in assetList.dependencies) {
+          //     let it = assetList.dependencies[k];
+          //     this.allAsset[it.package] = it;
+          //   }
+          // }//if
           resolve();
         });
       });
     };//analyzeAllAssetFromConfig
 
-    checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then(() => {
-      // console.log('res', this.allAsset);
+    // this.messageSrv.message("什么鬼");
+
+    checkAssetListFile(configPath).then(analyzeAllAssetFromConfig).then(() => {
+      console.log('成功!');
+      this._analyzeFileStructureProcess = false;
+    }, err => {
+      this.messageSrv.message(err, true);
+      this._analyzeFileStructureProcess = false;
     });
+
+
+
+
+    // // 校验配置文件是否存在
+    // let checkAssetListFile = (configPath: string) => {
+    //   return new Promise((resolve, reject) => {
+    //     fs.exists(configPath, exist => {
+    //       if (exist) {
+    //         resolve(configPath);
+    //         return;
+    //       }
+    //       reject("message.cannotFindAssetListFile");
+    //     });
+    //   });
+    // };//checkAssetListFile
+
+    // //分析配置文件里面所包含的资源
+    // let analyzeAllAssetFromConfig = (configPath: string) => {
+    //   return new Promise((resolve, reject) => {
+    //     fsExtra.readJSON(configPath, { encoding: 'utf8' }, (err, assetList: AssetList) => {
+    //       if (err) {
+    //         reject(err.message);
+    //         return;
+    //       }
+
+    //       if (assetList.dataMap) {
+    //         for (let k in assetList.dataMap) {
+    //           let it = assetList.dataMap[k];
+    //           it._clientAsset = true;
+    //           this.allAsset[it.package] = it;
+    //         }
+    //       }//if
+
+    //       if (assetList.dependencies) {
+    //         for (let k in assetList.dependencies) {
+    //           let it = assetList.dependencies[k];
+    //           this.allAsset[it.package] = it;
+    //         }
+    //       }//if
+    //       resolve();
+    //     });
+    //   });
+    // };//analyzeAllAssetFromConfig
+
+    // checkAssetListFile(path.join(this._projectDir, "Saved", "AssetMan", "assetlist.txt")).then(analyzeAllAssetFromConfig).then(() => {
+    //   // console.log('res', this.allAsset);
+    // });
   }//selectProjectDir
+
+  /**
+   * 检测文件修改时间信息,用来校验md5,不能只根据package记录md5,还应该加上修改时间
+   */
+  _checkAssetStat() {
+
+  }//_checkAssetStat
 
   upload() {
     this._uploading = true;
@@ -379,6 +502,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       }));
     };//uploadIconFiles
 
+    //上传原文件
     let uploadSrcAssetFiles = () => {
       this._uploadingProcessStep = 4;
       let limit = promiseLimit(20);
@@ -431,6 +555,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           }
 
           this.assetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
+            // console.log('dep url:',url);
             if (url) {
               it._url = url;
               resolve();
@@ -570,15 +695,23 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       }));
     };//createClientObject
 
-    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(uploadSrcAssetFiles).then(uploadSingleFiles).then(createClientObject).then(() => {
-      this.messageSrv.operateSuccessfully();
-      this._uploading = false;
-      this.assetMd5CacheSrv.persistCache2File();
-    }, err => {
-      this._uploading = false;
-      console.error('矮油,上传过程出现异常,详情为:', err);
-    });
+    // fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadSrcAssetFiles).then(uploadSingleFiles).then(createClientObject).then(() => {
+    //   this.messageSrv.operateSuccessfully();
+    //   this._uploading = false;
+    //   this.assetMd5CacheSrv.persistCache2File();
+    // }, err => {
+    //   this._uploading = false;
+    //   console.error('矮油,上传过程出现异常,详情为:', err);
+    // });
 
+    // fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(uploadSrcAssetFiles).then(uploadSingleFiles).then(createClientObject).then(() => {
+    //   this.messageSrv.operateSuccessfully();
+    //   this._uploading = false;
+    //   this.assetMd5CacheSrv.persistCache2File();
+    // }, err => {
+    //   this._uploading = false;
+    //   console.error('矮油,上传过程出现异常,详情为:', err);
+    // });
 
   }//upload
 
