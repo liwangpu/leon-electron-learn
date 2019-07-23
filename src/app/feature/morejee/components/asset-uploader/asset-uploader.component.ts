@@ -12,11 +12,11 @@ import * as promiseLimit from 'promise-limit';
 import { AssetUploaderMd5CacheService } from '../../services/asset-uploader-md5-cache.service';
 
 class AssetList {
-  dataMap: { [key: string]: DataMap };
-  dependencies: { [key: string]: DataMap };
+  dataMap: { [key: string]: AssetItem };
+  dependencies: { [key: string]: AssetItem };
 }
 
-class DataMap {
+class AssetItem {
   package: string;
   name: string;
   class: string;
@@ -30,18 +30,7 @@ class DataMap {
 class AssetDependency {
   package: string;
   name: string;
-  class: string;
-  level: number;
   localPath: string;
-  fileAssetId: string;
-  objId: string;
-}
-
-enum FileType {
-  icon,
-  sourceAsset,
-  unCookedAsset,
-  cookedAsset
 }
 
 
@@ -50,35 +39,38 @@ enum FileType {
  * 而该类是解读配置文件后整理的一个需要上传的数据结构
  */
 class AnalysisFileSetStructure {
-  // packageNames: string[];
   mapPackageNames: string[] = [];
   texturePackageNames: string[] = [];
   staticMeshPackageNames: string[] = [];
   materialPackageNames: string[] = [];
-  iconPackageNames: string[] = [];
-  clientAssets: { [key: string]: clientAsset } = {};
+  clientAssets: { [key: string]: ClientAsset } = {};
+  packageMaps: { [key: string]: AnalysisPackageMap } = {};
   files: { [key: string]: AnalysisFile } = {};
 }
 
 //资源对象
-class clientAsset {
+class ClientAsset {
   objId: string;
   name: string;
-  dependencies: string[];
-  srcPackageName: string;
-  cookedPackageName: string;
-  unCookedPackageName: string;
   iconPackageName: string;
 }
 
-// //资源对象的依赖项
-// class clientAssetDependency {
-//   packageName: string;
-//   url: string;
-// }
+
+class AnalysisPackageMap {
+  package: string;
+  srcPackageName: string;
+  unCookedPackageName: string;
+  srcFileUrl: string;
+  cookedFileUrl: string;
+  unCookedFileUrl: string;
+  dependencyPackages: string[] = [];
+  dependencyCookedFileUrls: string[] = [];
+}
 
 //单个资源文件,包括资源对象和依赖项还有图标文件
 class AnalysisFile {
+  objId: string;
+  url: string;
   name: string;
   package: string;
   localPath: string;
@@ -86,14 +78,12 @@ class AnalysisFile {
   size: number;
   modifiedTime: string;
   fileType: FileType;
+}
 
-  static from(n: string, pck: string, lcpath: string): AnalysisFile {
-    let f = new AnalysisFile();
-    f.name = n;
-    f.package = pck;
-    f.localPath = lcpath;
-    return f;
-  }
+enum FileType {
+  icon,
+  source,
+  cooked
 }
 
 
@@ -214,53 +204,58 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           if (assetList.dataMap) {
             for (let k in assetList.dataMap) {
               let it = assetList.dataMap[k];
-              let ast = new clientAsset();
+              let pckMap = new AnalysisPackageMap();
+              pckMap.package = it.package;
+              let ast = new ClientAsset();
               ast.name = it.name;
 
               //分析cooked,uncooked,source单文件,因为这几个单文件不在顶层dependencies里面
               if (it.package) {
-                ast.cookedPackageName = it.package;
-                this._analyzeFileStructure.files[it.package] = AnalysisFile.from(it.name, it.package, it.localPath);
+                let singleFile = new AnalysisFile();
+                singleFile.fileType = FileType.cooked;
+                singleFile.name = it.name;
+                singleFile.package = it.package;
+                singleFile.localPath = it.localPath;
+                this._analyzeFileStructure.files[it.package] = singleFile;
               }
 
               if (it.srcFile && it.srcFile.package) {
-                ast.srcPackageName = it.srcFile.package;
-                this._analyzeFileStructure.files[it.srcFile.package] = AnalysisFile.from(it.srcFile.name, it.srcFile.package, it.srcFile.localPath);
+                let singleFile = new AnalysisFile();
+                singleFile.fileType = FileType.source;
+                singleFile.name = it.srcFile.name;
+                singleFile.package = it.srcFile.package;
+                singleFile.localPath = it.srcFile.localPath;
+                this._analyzeFileStructure.files[it.srcFile.package] = singleFile;
               }
 
 
               if (it.unCookedFile && it.unCookedFile.package) {
-                ast.unCookedPackageName = it.unCookedFile.package;
-                this._analyzeFileStructure.files[it.unCookedFile.package] = AnalysisFile.from(it.unCookedFile.name, it.unCookedFile.package, it.unCookedFile.localPath);
+                let singleFile = new AnalysisFile();
+                singleFile.fileType = FileType.source;
+                singleFile.name = it.unCookedFile.name;
+                singleFile.package = it.unCookedFile.package;
+                singleFile.localPath = it.unCookedFile.localPath;
+                this._analyzeFileStructure.files[it.unCookedFile.package] = singleFile;
               }
 
-
-
-              // ast.unCookedPackageName = it.unCookedFile && it.unCookedFile.package ? it.unCookedFile.package : '';
-
-
-
-
-
-              // ast.iconPackageName=it.dependencies
-
-              ast.dependencies = [];
               //分析依赖项,随便分析icon文件
               //icon文件问dependencies中开头为UploadIcons的依赖项
               for (let dpc in it.dependencies) {
-                // let dpc = assetList.dependencies[k];
-                ast.dependencies.push(dpc);
+
                 if (dpc.indexOf('UploadIcons') > -1) {
                   ast.iconPackageName = dpc;
-                }//if 
+                  let iconFile = it.dependencies[dpc];
+                  let s = new AnalysisFile();
+                  s.fileType = FileType.icon;
+                  s.name = iconFile.name;
+                  s.package = iconFile.package;
+                  s.localPath = iconFile.localPath;
+                  this._analyzeFileStructure.files[iconFile.package] = s;
+                }
+                else {
+                  pckMap.dependencyPackages.push(dpc);
+                }
               }//for
-
-              // ast.packageName = it.package;
-              // ast.name = it.name;
-
-              // it._clientAsset = true;
-              // this.allAsset[it.package] = it;
-
 
               if (it.class.indexOf("World") > -1)
                 this._analyzeFileStructure.mapPackageNames.push(it.package);
@@ -274,18 +269,15 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
                 console.warn(`出现一个不知道类型的class:${it.package}`);
 
 
-              // if (ast.cookedPackageName == '/Game/Meshes/10062')
-              //   console.log(7, ast);
-              // console.log(8, it);
+              this._analyzeFileStructure.clientAssets[it.package] = ast;
+              this._analyzeFileStructure.packageMaps[it.package] = pckMap;
             }//for
           }//if
 
-          // if (assetList.dependencies) {
-          //   for (let k in assetList.dependencies) {
-          //     let it = assetList.dependencies[k];
-          //     this.allAsset[it.package] = it;
-          //   }
-          // }//if
+          if (assetList.dependencies) {
+
+          }//if
+
           resolve();
         });
       });
