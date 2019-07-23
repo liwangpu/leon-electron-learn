@@ -9,8 +9,8 @@ export class AssetUploaderCandeactiveService implements CanDeactivate<AssetUploa
   constructor() { }
 
   canDeactivate(component: AssetUploaderComponent, currentRoute: ActivatedRouteSnapshot, currentState: RouterStateSnapshot, nextState?: RouterStateSnapshot): boolean | UrlTree | Observable<boolean | UrlTree> | Promise<boolean | UrlTree> {
-    if (component._uploading)
+    if (component._uploadingProcess)
       component.confirmLeaveUploader();
-    return !component._uploading;
+    return !component._uploadingProcess;
   }//canDeactivate
 }

@@ -212,12 +212,12 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   // private _allSingleFileAsset: { [key: string]: SingleAsset } = {};
   _analyzeFileStructure = new AnalysisFileSetStructure();
   _analyzeFileStructureProcess = false;
-  _uploading = false;
+  _uploadingProcess = false;
   _uploadingProcessStep = 0;
   // allAsset: { [key: string]: DataMap } = {};
-  // get allAssetCount() {
-  //   return Object.keys(this.allAsset).length;
-  // }
+  get allAssetCount() {
+    return Object.keys(this._analyzeFileStructure.files).length;
+  }
 
 
 
@@ -411,7 +411,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   }//_checkAssetStat
 
   upload() {
-    this._uploading = true;
+    this._uploadingProcess = true;
 
 
     // let allPackageNames = Object.keys(this.allAsset);

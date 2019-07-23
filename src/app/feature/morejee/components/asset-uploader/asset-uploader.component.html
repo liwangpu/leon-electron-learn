@@ -17,7 +17,6 @@
             <th>包名</th>
             <th class="name">名称</th>
             <th class="type">类型</th>
-            <!-- <th class="status">状态</th> -->
           </tr>
         </thead>
         <tbody>
@@ -36,7 +35,7 @@
         <p class="active">正在解析资源文件</p>
       </div>
     </div>
-    <div class="work-process" *ngIf='_uploading'>
+    <div class="work-process" *ngIf='_uploadingProcess'>
       <mat-spinner></mat-spinner>
       <div class="msg">
         <p [class.active]='_uploadingProcessStep==1'>收集文件信息</p>
@@ -49,8 +48,8 @@
     </div>
   </div>
   <div class="footer">
-    <!-- <p class="process" *ngIf='allAssetCount>0'>
+    <p class="process" *ngIf='allAssetCount>0'>
       {{'glossary.count'|translate}}：{{allAssetCount}}
-    </p> -->
+    </p>
   </div>
 </div>
