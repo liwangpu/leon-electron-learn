@@ -34,7 +34,6 @@ class AssetItem {
     f.name = it.name;
     f.localPath = it.srcFile.localPath;
     f.class = it.class;
-    console.log(666,f,FileType.source);
     return f;
   }//getSourceFile
 
@@ -176,7 +175,8 @@ class AnalysisFile {
 enum FileType {
   icon,
   source,
-  cooked
+  cooked,
+  unCooked
 }
 
 enum ClientAssetType {
@@ -187,6 +187,9 @@ enum ClientAssetType {
   other
 }
 
+function GenerateCDKEY(pck: string, ft: FileType) {
+  return `${ft}@${pck}`;
+}//生成类型和package唯一识别码
 
 // /**
 //  * 从配置文件读出的文件有层级结构
@@ -310,11 +313,11 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               // let iconF = it.getIconFile();
 
               if (sourcF)
-                this._analyzeFileStructure.files[sourcF.package] = sourcF;
+                this._analyzeFileStructure.files[GenerateCDKEY(sourcF.package, sourcF.fileType)] = sourcF;
               if (unCookedF)
-                this._analyzeFileStructure.files[unCookedF.package] = unCookedF;
+                this._analyzeFileStructure.files[GenerateCDKEY(unCookedF.package, unCookedF.fileType)] = unCookedF;
               if (cookedF)
-                this._analyzeFileStructure.files[cookedF.package] = cookedF;
+                this._analyzeFileStructure.files[GenerateCDKEY(cookedF.package, cookedF.fileType)] = cookedF;
 
               let cAsset = AssetItem.getClientAsset(it);
               this._analyzeFileStructure.clientAssets[cAsset.package] = cAsset;
@@ -332,11 +335,11 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               let cookedF = AssetItem.getCookedFile(it);
 
               if (sourcF)
-                this._analyzeFileStructure.files[sourcF.package] = sourcF;
+                this._analyzeFileStructure.files[GenerateCDKEY(sourcF.package, sourcF.fileType)] = sourcF;
               if (unCookedF)
-                this._analyzeFileStructure.files[unCookedF.package] = unCookedF;
+                this._analyzeFileStructure.files[GenerateCDKEY(unCookedF.package, unCookedF.fileType)] = unCookedF;
               if (cookedF)
-                this._analyzeFileStructure.files[cookedF.package] = cookedF;
+                this._analyzeFileStructure.files[GenerateCDKEY(cookedF.package, cookedF.fileType)] = cookedF;
 
               let pckMap = AssetItem.getPackageMap(it);
               this._analyzeFileStructure.packageMaps[pckMap.package] = pckMap;
@@ -351,7 +354,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     // this.messageSrv.message("什么鬼");
 
     checkAssetListFile(configPath).then(analyzeAllAssetFromConfig).then(() => {
-      // console.log('成功!', this._analyzeFileStructure);
+      console.log('成功!', this._analyzeFileStructure);
       this._analyzeFileStructureProcess = false;
     }, err => {
       this.messageSrv.message(err, true);
@@ -567,12 +570,10 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       for (let pck in this._analyzeFileStructure.files) {
         let it = this._analyzeFileStructure.files[pck];
 
-        if (pck == "/Game/Meshes/10062")
-          console.log('exist',it,FileType.source);
-       
         if (it.notExist) continue;
         if (it.fileType != FileType.source) continue;
 
+        console.log(111, it);
         packageNames.push(pck);
       }
 

@@ -22,7 +22,7 @@
         <tbody>
           <tr *ngFor="let ky of _analyzeFileStructure.files|keyvalue;let idx=index;">
             <td>{{idx+1}}</td>
-            <td class="lj">{{ky.key}}</td>
+            <td class="lj">{{ky.value.package}}</td>
             <td class="lj">{{ky.value.name}}</td>
             <td class="lj">{{ky.value.class}}</td>
           </tr>
