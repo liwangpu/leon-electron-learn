@@ -129,6 +129,10 @@ class AnalysisFileSetStructure {
   clientAssets: { [key: string]: AnalysisClientAsset } = {};
   packageMaps: { [key: string]: AnalysisPackageMap } = {};
   files: { [key: string]: AnalysisFile } = {};
+
+  get filePackageNames(): string[] {
+    return Object.keys(this.files);
+  }
 }
 
 //资源对象
@@ -164,7 +168,8 @@ class AnalysisFile {
   localPath: string;
   md5: string;
   size: number;
-  modifiedTime: string;
+  modifiedTime: number;
+  notExist: boolean;
   fileType: FileType;
 }
 
@@ -209,22 +214,21 @@ enum ClientAssetType {
 export class AssetUploaderComponent implements OnInit, OnDestroy {
 
 
-  // private _allSingleFileAsset: { [key: string]: SingleAsset } = {};
+  //UE4项目文件夹名称
+  private _projectFolderName: string;
+  //UE4项目文件夹路径
+  _projectDir = "";
   _analyzeFileStructure = new AnalysisFileSetStructure();
   _analyzeFileStructureProcess = false;
   _uploadingProcess = false;
   _uploadingProcessStep = 0;
-  // allAsset: { [key: string]: DataMap } = {};
   get allAssetCount() {
     return Object.keys(this._analyzeFileStructure.files).length;
   }
 
 
 
-  //UE4项目文件夹名称
-  private _projectFolderName: string;
-  //UE4项目文件夹路径
-  _projectDir = "";
+
 
 
 
@@ -403,17 +407,130 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     // });
   }//selectProjectDir
 
-  /**
-   * 检测文件修改时间信息,用来校验md5,不能只根据package记录md5,还应该加上修改时间
-   */
-  _checkAssetStat() {
 
-  }//_checkAssetStat
+
+
+
 
   upload() {
     this._uploadingProcess = true;
 
+    //临时存储单文件的package,避免重复计算
+    let singleFilePackageNames = this._analyzeFileStructure.filePackageNames;
+    // console.log(1, this._singleFilePackageNames);
 
+    //修正资源localPath可能出现的路径异常
+    let fixLocalPathError = () => {
+      for (let pck in this._analyzeFileStructure.files) {
+        let it = this._analyzeFileStructure.files[pck];
+        let idx = it.localPath.indexOf(this._projectFolderName);
+        let tplocalStr = it.localPath.slice(idx + this._projectFolderName.length, it.localPath.length);
+        //不知道ue4那边对文件路径分隔符是什么,都尝试一下
+        let sep = '/';
+        if (tplocalStr.indexOf(sep) == -1)
+          sep = "\\";
+        let tarr = tplocalStr.split(sep);
+        let prjName = tarr.join(path.sep);
+        it.localPath = this._projectDir + prjName;
+      }
+      return Promise.resolve();
+    }//fixLocalPathError
+
+    //检测文件修改时间信息,用来校验md5,不能只根据package记录md5,还应该加上修改时间
+    let checkAssetStat = () => {
+      this._uploadingProcessStep = 1;
+      let limit = promiseLimit(20);
+      let checkStat = (it: AnalysisFile) => {
+        return new Promise((resolve) => {
+          if (it.modifiedTime) {
+            resolve();
+            return;
+          }
+
+          fs.stat(it.localPath, (err, stat) => {
+            if (err) {
+              //文件可能不存在,不可以直接终止程序
+              console.warn(`发现文件不存在,具体路径为:${it.localPath}`);
+              it.notExist = true;
+              resolve();
+              return;
+            }
+            it.modifiedTime = stat.mtime.getTime();
+            it.size = stat.size;
+            resolve();
+          });//stat
+        });
+      };//checkAssetStat
+
+      return Promise.all(singleFilePackageNames.map(lcp => {
+        let it = this._analyzeFileStructure.files[lcp];
+        return limit(() => checkStat(it));
+      }));
+    }//_checkAssetStat
+
+    //计算文件的md5信息
+    let calcFileMD5 = () => {
+      this._uploadingProcessStep = 2;
+      let limit = promiseLimit(10);
+      let calcMD5 = (it: AnalysisFile) => {
+        return new Promise((resolve, reject) => {
+          if (it.notExist) {
+            resolve();
+            return;
+          }
+
+          if (it.md5) {
+            resolve();
+            return;
+          }
+
+          let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.localPath, it.modifiedTime, it.size);
+          // console.log(111, _md5);
+          if (!_md5) {
+            md5File(it.localPath, (err, hash) => {
+              if (err) {
+                reject(err.message);
+                return;
+              }
+              it.md5 = hash;
+              this.assetMd5CacheSrv.cacheMd5(it.localPath, hash, it.modifiedTime, it.size);
+              resolve();
+              return;
+            });
+          }
+          else {
+            it.md5 = _md5;
+            resolve();
+          }
+        });
+      };//calcMD5
+      return Promise.all(singleFilePackageNames.map(lcp => {
+        let it = this._analyzeFileStructure.files[lcp];
+        return limit(() => calcMD5(it));
+      }));
+    };//calcFileMD5
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(() => {
+      console.log('成功!', this._analyzeFileStructure);
+      this._uploadingProcess = false;
+    }, err => {
+      console.warn('error', err);
+      this._uploadingProcess = false;
+    });
     // let allPackageNames = Object.keys(this.allAsset);
 
     // let package2SingleFileMap = {};
