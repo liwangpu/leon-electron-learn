@@ -25,6 +25,90 @@ class AssetItem {
   dependencies: { [key: string]: AssetDependency };
   srcFile: AssetDependency;
   unCookedFile: AssetDependency;
+
+  getSourceFile(): AnalysisFile {
+    if (this.srcFile || this.srcFile.localPath) return;
+
+    let f = new AnalysisFile();
+    f.fileType = FileType.source;
+    f.package = this.package;
+    f.name = this.name;
+    f.localPath = this.srcFile.localPath;
+    return f;
+  }//getSourceFile
+
+  getUnCookedFile(): AnalysisFile {
+    if (this.unCookedFile || this.unCookedFile.localPath) return;
+
+    let f = new AnalysisFile();
+    f.fileType = FileType.source;
+    f.package = this.package;
+    f.name = this.name;
+    f.localPath = this.unCookedFile.localPath;
+    return f;
+  }//getUnCookedFile
+
+  getCookedFile(): AnalysisFile {
+    let f = new AnalysisFile();
+    f.fileType = FileType.cooked;
+    f.package = this.package;
+    f.name = this.name;
+    f.localPath = this.localPath;
+    return f;
+  }//getCookedFile
+
+  getIconFile(): AnalysisFile {
+    if (this.dependencies) {
+      for (let dpc in this.dependencies) {
+        if (dpc.indexOf('UploadIcons') > -1) {
+          let iconFile = this.dependencies[dpc];
+          let f = new AnalysisFile();
+          f.fileType = FileType.icon;
+          f.name = iconFile.name;
+          f.package = iconFile.package;
+          f.localPath = iconFile.localPath;
+          return f;
+        }//if
+      }//for
+    }
+    return;
+  }//getIconFile
+
+  getPackageMap(): AnalysisPackageMap {
+    let sourcF = this.getSourceFile();
+    let unCookedF = this.getUnCookedFile();
+    let pckMap = new AnalysisPackageMap();
+    pckMap.package = this.package;
+    pckMap.srcPackageName = sourcF ? sourcF.package : '';
+    pckMap.unCookedPackageName = unCookedF ? unCookedF.package : '';
+    if (this.dependencies) {
+      for (let dpc in this.dependencies) {
+        if (dpc.indexOf('UploadIcons') == -1)
+          pckMap.dependencyPackages.push(dpc);
+      }//for
+    }
+    return pckMap;
+  }//getPackageMap
+
+  getClientAsset(): AnalysisClientAsset {
+    let iconF = this.getIconFile();
+    let cAsset = new AnalysisClientAsset();
+    cAsset.name = this.name;
+    cAsset.package = this.package;
+    cAsset.iconPackageName = iconF ? iconF.package : '';
+    if (this.class.indexOf("World") > -1)
+      cAsset.clientAssetType = ClientAssetType.map;
+    else if (this.class.indexOf("Texture") > -1)
+      cAsset.clientAssetType = ClientAssetType.texture;
+    else if (this.class.indexOf("Material") > -1)
+      cAsset.clientAssetType = ClientAssetType.material;
+    else if (this.class.indexOf("StaticMesh") > -1)
+      cAsset.clientAssetType = ClientAssetType.staticMesh;
+    else
+      cAsset.clientAssetType = ClientAssetType.other;
+    return cAsset;
+  }//getClientAsset
+
 }
 
 class AssetDependency {
@@ -39,20 +123,22 @@ class AssetDependency {
  * 而该类是解读配置文件后整理的一个需要上传的数据结构
  */
 class AnalysisFileSetStructure {
-  mapPackageNames: string[] = [];
-  texturePackageNames: string[] = [];
-  staticMeshPackageNames: string[] = [];
-  materialPackageNames: string[] = [];
-  clientAssets: { [key: string]: ClientAsset } = {};
+  // mapPackageNames: string[] = [];
+  // texturePackageNames: string[] = [];
+  // staticMeshPackageNames: string[] = [];
+  // materialPackageNames: string[] = [];
+  clientAssets: { [key: string]: AnalysisClientAsset } = {};
   packageMaps: { [key: string]: AnalysisPackageMap } = {};
   files: { [key: string]: AnalysisFile } = {};
 }
 
 //资源对象
-class ClientAsset {
+class AnalysisClientAsset {
   objId: string;
+  package: string;
   name: string;
   iconPackageName: string;
+  clientAssetType: ClientAssetType;
 }
 
 
@@ -84,6 +170,14 @@ enum FileType {
   icon,
   source,
   cooked
+}
+
+enum ClientAssetType {
+  map,
+  texture,
+  staticMesh,
+  material,
+  other
 }
 
 
@@ -204,78 +298,97 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           if (assetList.dataMap) {
             for (let k in assetList.dataMap) {
               let it = assetList.dataMap[k];
-              let pckMap = new AnalysisPackageMap();
-              pckMap.package = it.package;
-              let ast = new ClientAsset();
-              ast.name = it.name;
 
-              //分析cooked,uncooked,source单文件,因为这几个单文件不在顶层dependencies里面
-              if (it.package) {
-                let singleFile = new AnalysisFile();
-                singleFile.fileType = FileType.cooked;
-                singleFile.name = it.name;
-                singleFile.package = it.package;
-                singleFile.localPath = it.localPath;
-                this._analyzeFileStructure.files[it.package] = singleFile;
-              }
+              let sourcF = it.getSourceFile();
+              let unCookedF = it.getUnCookedFile();
+              let cookedF = it.getCookedFile();
+              let iconF = it.getIconFile();
 
-              if (it.srcFile && it.srcFile.package) {
-                let singleFile = new AnalysisFile();
-                singleFile.fileType = FileType.source;
-                singleFile.name = it.srcFile.name;
-                singleFile.package = it.srcFile.package;
-                singleFile.localPath = it.srcFile.localPath;
-                this._analyzeFileStructure.files[it.srcFile.package] = singleFile;
-              }
+              if (sourcF)
+                this._analyzeFileStructure.files[sourcF.package] = sourcF;
+              if (unCookedF)
+                this._analyzeFileStructure.files[unCookedF.package] = unCookedF;
+              if (cookedF)
+                this._analyzeFileStructure.files[sourcF.package] = sourcF;
 
 
-              if (it.unCookedFile && it.unCookedFile.package) {
-                let singleFile = new AnalysisFile();
-                singleFile.fileType = FileType.source;
-                singleFile.name = it.unCookedFile.name;
-                singleFile.package = it.unCookedFile.package;
-                singleFile.localPath = it.unCookedFile.localPath;
-                this._analyzeFileStructure.files[it.unCookedFile.package] = singleFile;
-              }
+              // let pckMap = new AnalysisPackageMap();
+              // pckMap.package = it.package;
+              // let ast = new ClientAsset();
+              // ast.name = it.name;
 
-              //分析依赖项,随便分析icon文件
-              //icon文件问dependencies中开头为UploadIcons的依赖项
-              for (let dpc in it.dependencies) {
+              // //分析cooked,uncooked,source单文件,因为这几个单文件不在顶层dependencies里面
+              // if (it.package) {
+              //   let singleFile = new AnalysisFile();
+              //   singleFile.fileType = FileType.cooked;
+              //   singleFile.name = it.name;
+              //   singleFile.package = it.package;
+              //   singleFile.localPath = it.localPath;
+              //   this._analyzeFileStructure.files[it.package] = singleFile;
+              // }
 
-                if (dpc.indexOf('UploadIcons') > -1) {
-                  ast.iconPackageName = dpc;
-                  let iconFile = it.dependencies[dpc];
-                  let s = new AnalysisFile();
-                  s.fileType = FileType.icon;
-                  s.name = iconFile.name;
-                  s.package = iconFile.package;
-                  s.localPath = iconFile.localPath;
-                  this._analyzeFileStructure.files[iconFile.package] = s;
-                }
-                else {
-                  pckMap.dependencyPackages.push(dpc);
-                }
-              }//for
-
-              if (it.class.indexOf("World") > -1)
-                this._analyzeFileStructure.mapPackageNames.push(it.package);
-              else if (it.class.indexOf("Texture") > -1)
-                this._analyzeFileStructure.texturePackageNames.push(it.package);
-              else if (it.class.indexOf("Material") > -1)
-                this._analyzeFileStructure.materialPackageNames.push(it.package);
-              else if (it.class.indexOf("StaticMesh") > -1)
-                this._analyzeFileStructure.staticMeshPackageNames.push(it.package);
-              else
-                console.warn(`出现一个不知道类型的class:${it.package}`);
+              // if (it.srcFile && it.srcFile.package) {
+              //   let singleFile = new AnalysisFile();
+              //   singleFile.fileType = FileType.source;
+              //   singleFile.name = it.srcFile.name;
+              //   singleFile.package = it.srcFile.package;
+              //   singleFile.localPath = it.srcFile.localPath;
+              //   this._analyzeFileStructure.files[it.srcFile.package] = singleFile;
+              // }
 
 
-              this._analyzeFileStructure.clientAssets[it.package] = ast;
-              this._analyzeFileStructure.packageMaps[it.package] = pckMap;
+              // if (it.unCookedFile && it.unCookedFile.package) {
+              //   let singleFile = new AnalysisFile();
+              //   singleFile.fileType = FileType.source;
+              //   singleFile.name = it.unCookedFile.name;
+              //   singleFile.package = it.unCookedFile.package;
+              //   singleFile.localPath = it.unCookedFile.localPath;
+              //   this._analyzeFileStructure.files[it.unCookedFile.package] = singleFile;
+              // }
+
+              // //分析依赖项,随便分析icon文件
+              // //icon文件问dependencies中开头为UploadIcons的依赖项
+              // for (let dpc in it.dependencies) {
+
+              //   if (dpc.indexOf('UploadIcons') > -1) {
+              //     ast.iconPackageName = dpc;
+              //     let iconFile = it.dependencies[dpc];
+              //     let s = new AnalysisFile();
+              //     s.fileType = FileType.icon;
+              //     s.name = iconFile.name;
+              //     s.package = iconFile.package;
+              //     s.localPath = iconFile.localPath;
+              //     this._analyzeFileStructure.files[iconFile.package] = s;
+              //   }
+              //   else {
+              //     pckMap.dependencyPackages.push(dpc);
+              //   }
+              // }//for
+
+              // if (it.class.indexOf("World") > -1)
+              //   this._analyzeFileStructure.mapPackageNames.push(it.package);
+              // else if (it.class.indexOf("Texture") > -1)
+              //   this._analyzeFileStructure.texturePackageNames.push(it.package);
+              // else if (it.class.indexOf("Material") > -1)
+              //   this._analyzeFileStructure.materialPackageNames.push(it.package);
+              // else if (it.class.indexOf("StaticMesh") > -1)
+              //   this._analyzeFileStructure.staticMeshPackageNames.push(it.package);
+              // else
+              //   console.warn(`出现一个不知道类型的class:${it.package}`);
+
+
+              // this._analyzeFileStructure.clientAssets[it.package] = ast;
+              // this._analyzeFileStructure.packageMaps[it.package] = pckMap;
             }//for
           }//if
 
           if (assetList.dependencies) {
+            for (let k in assetList.dataMap) {
+              let it = assetList.dataMap[k];
+              let pckMap = new AnalysisPackageMap();
+              pckMap.package = it.package;
 
+            }//for
           }//if
 
           resolve();
