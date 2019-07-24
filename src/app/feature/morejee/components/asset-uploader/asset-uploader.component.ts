@@ -25,6 +25,13 @@ class AssetItem {
   androidCookedFile: string;
   iosCookedFile: string;
 
+  static getPackageMap(it: AssetItem): PackageMap {
+    let mp = new PackageMap();
+    mp.package = it.package;
+    mp.dependencies = it.dependencies;
+    return mp;
+  }//getPackageMap
+
   static getIconFile(it: AssetItem): SingleFile {
     if (!it.iconFile) return null;
     let f = new SingleFile();
@@ -106,9 +113,14 @@ class AssetItem {
 }
 
 class AnalysisAssetList {
-
+  packageMaps: PackageMap[] = [];
   clientObjects: { [key: string]: ClientAssetObject } = {};
   singleFiles: { [key: string]: SingleFile } = {};
+}
+
+class PackageMap {
+  package: string;
+  dependencies: string[];
 }
 
 class ClientAssetObject {
@@ -273,6 +285,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
     this._uploadingProcess = true;
 
+    let allPackages = [];
     let allSFPackages = [];
     let iconSFPackages = [];
     let sourceSFPackages = [];
@@ -281,6 +294,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     for (let pck in this._analysisAssetList.singleFiles) {
       let it = this._analysisAssetList.singleFiles[pck];
       allSFPackages.push(pck);
+      allPackages.push(pck);
       if (it.fileType == FileType.Icon)
         iconSFPackages.push(pck);
       else if (it.fileType == FileType.Source || it.fileType == FileType.UCooked)
@@ -444,7 +458,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           if (it._url) return resolve();
           this.assetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
             if (url) {
-              it._url = url; 
+              it._url = url;
               return resolve();
             }
 
@@ -452,7 +466,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               if (err) {
                 console.error('上传cooked file异常:', err);
                 return resolve();
-              }  
+              }
 
               let obj = JSON.parse(res);
               it._url = obj.url;
@@ -466,6 +480,10 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
         return limit(() => uploadFile(it));
       }));
     };//uploadAlPlatformCookedFiles
+
+    let analyzePackageMaps = () => {
+
+    };//analyzePackageMaps
 
     fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(uploadSourceAndUnCookedFiles).then(uploadAlPlatformCookedFiles).then(() => {
       console.log(this._analysisAssetList);
