@@ -271,7 +271,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
   upload() {
 
-    // this._uploadingProcess = true;
+    this._uploadingProcess = true;
 
     let allSFPackages = [];
     let iconSFPackages = [];
@@ -432,7 +432,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       return Promise.all(sourceSFPackages.map(lcp => {
         let it = this._analysisAssetList.singleFiles[lcp];
         return limit(() => uploadFile(it));
-      })); 
+      }));
     };//uploadSourceAndUnCookedFiles
 
     let uploadAlPlatformCookedFiles = () => {
@@ -444,17 +444,18 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           if (it._url) return resolve();
           this.assetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
             if (url) {
-              it._url = url;
+              it._url = url; 
               return resolve();
             }
 
-            nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/files/stream`, (err, url) => {
+            nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/files/stream`, (err, res) => {
               if (err) {
                 console.error('上传cooked file异常:', err);
                 return resolve();
-              }
+              }  
 
-              it._url = url;
+              let obj = JSON.parse(res);
+              it._url = obj.url;
               resolve();
             });//nodeJsAPIUploadFile
           });//checkFileExistByMd5
@@ -471,7 +472,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       this._uploadingProcess = false;
     }, err => {
       this._uploadingProcess = false;
-      console.error('upload error:', err); 
+      console.error('upload error:', err);
     });
 
   }//upload
