@@ -171,16 +171,6 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     return Object.keys(this._analysisAssetList.singleFiles).length;
   }
 
-
-
-
-
-
-
-
-
-
-
   constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected srcAssetSrv: SrcClientAssetService, protected mapSrv: MapService, protected textureSrv: TextureService, protected materialSrv: MaterialService, protected meshSrv: StaticMeshService) {
 
   }//constructor
@@ -267,28 +257,171 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           resolve();
         });//readJSON
       });
-    }//analyzeAssetFromConfig
+    };//analyzeAssetFromConfig
 
     checkAssetListFile(configPath).then(analyzeAssetFromConfig).then(() => {
-      console.log(this._analysisAssetList);
+      // console.log(this._analysisAssetList);
       this._analyzeFileStructureProcess = false;
     }, err => {
-      console.log('err:', err);
+      console.error('selectProjectDir err:', err);
       this.messageSrv.message(err, true);
       this._analyzeFileStructureProcess = false;
     })
   }//selectProjectDir
 
-
-
-
-
-
   upload() {
 
+    this._uploadingProcess = true;
+
+    let allSFPackages = [];
+    let iconSFPackages = [];
+    let sourceSFPackages = [];
+    let cookedSFPackages = [];
+    //提取出各个类型的包名称,省得重复遍历
+    for (let pck in this._analysisAssetList.singleFiles) {
+      let it = this._analysisAssetList.singleFiles[pck];
+      allSFPackages.push(pck);
+      if (it.fileType == FileType.Icon)
+        iconSFPackages.push(pck);
+      else if (it.fileType == FileType.Source || it.fileType == FileType.UCooked)
+        sourceSFPackages.push(pck);
+      else
+        cookedSFPackages.push(pck);
+    }//for
+
+    //使用Node API上传文件
+    let nodeJsAPIUploadFile = (localPath: string, server: string, callback: (err: any, data?: any) => void) => {
+      let uploadReq = request.post(server, { auth: { bearer: this.cacheSrv.token }, headers: { fileExt: FileHelper.getFileExt(localPath), timeout: 600000 } }, (err, rs, body) => {
+        if (rs.statusCode >= 300 || rs.statusCode < 200) {
+          callback(rs.statusMessage);
+          return;
+        }
+        callback(null, body);
+      });
+      fs.createReadStream(localPath).pipe(uploadReq);
+    }//nodeJsUploadFile
+
+    //修正资源localPath可能出现的路径异常
+    let fixLocalPathError = () => {
+      for (let pck in this._analysisAssetList.singleFiles) {
+        let it = this._analysisAssetList.singleFiles[pck];
+        let idx = it.localPath.indexOf(this._projectFolderName);
+        let tplocalStr = it.localPath.slice(idx + this._projectFolderName.length, it.localPath.length);
+        //不知道ue4那边对文件路径分隔符是什么,都尝试一下
+        let sep = '/';
+        if (tplocalStr.indexOf(sep) == -1)
+          sep = "\\";
+        let tarr = tplocalStr.split(sep);
+        let prjName = tarr.join(path.sep);
+        it.localPath = this._projectDir + prjName;
+      }
+      return Promise.resolve();
+    };//fixLocalPathError
+
+    //检测文件修改时间信息,用来校验md5,不能只根据package记录md5,还应该加上修改时间
+    let checkAssetStat = () => {
+      this._uploadingProcessStep = 1;
+      let limit = promiseLimit(20);
+      let checkStat = (it: SingleFile) => {
+        return new Promise((resolve) => {
+          if (it._modifiedTime) return resolve();
+
+          fs.stat(it.localPath, (err, stat) => {
+            if (err) {
+              console.warn(`发现文件不存在,具体路径为:${it.localPath}`);
+              it._notExist = true;
+              return resolve();
+            }
+
+            it._modifiedTime = stat.mtime.getTime();
+            it._size = stat.size;
+            resolve();
+          });//stat
+        });//Promise
+      };//checkStat
+      return Promise.all(allSFPackages.map(lcp => {
+        let it = this._analysisAssetList.singleFiles[lcp];
+        return limit(() => checkStat(it));
+      }));
+    };//checkAssetStat
+
+    //计算文件的md5信息
+    let calcFileMD5 = () => {
+      this._uploadingProcessStep = 2;
+      let limit = promiseLimit(10);
+      let calcMD5 = (it: SingleFile) => {
+        return new Promise((resolve, reject) => {
+          if (it._notExist) return resolve();
+          if (it._md5) return resolve();
+          let _md5 = this.assetMd5CacheSrv.getMd5Cache(it.localPath, it._modifiedTime, it._size);
+          if (_md5) {
+            it._md5 = _md5;
+            return resolve();
+          }
+
+          md5File(it.localPath, (err, hash) => {
+            if (err) return reject(err.message);
+
+            it._md5 = hash;
+            this.assetMd5CacheSrv.cacheMd5(it.localPath, hash, it._modifiedTime, it._size);
+            return resolve();
+          });//md5File
+
+        });//Promise
+      };//calcMD5
+      return Promise.all(allSFPackages.map(lcp => {
+        let it = this._analysisAssetList.singleFiles[lcp];
+        return limit(() => calcMD5(it));
+      }));
+    };//calcFileMD5
+
+    //上传图标文件
+    let uploadIconFiles = () => {
+      this._uploadingProcessStep = 3;
+      let limit = promiseLimit(15);
+      let uploadIcon = (it: SingleFile) => {
+        return new Promise((resolve, reject) => {
+          if (it._notExist) return resolve();
+          this.srcAssetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
+            if (url) {
+              it._url = url;
+              return resolve();
+            }
+
+            nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/icons/stream`, (err, url) => {
+              if (err) {
+                console.error('上传source file异常:', err);
+                return resolve();
+              }
+
+              it._url = url;
+              resolve();
+            });//nodeJsAPIUploadFile
+          });//checkFileExistByMd5
+        });//Promise
+      };//uploadIcon
+
+      return Promise.all(iconSFPackages.map(lcp => {
+        let it = this._analysisAssetList.singleFiles[lcp];
+        return limit(() => uploadIcon(it));
+      }));
+    };//uploadIcon
+
+    //上传原资源文件
+    let uploadSourceAndUnCookedFiles = () => {
+      this._uploadingProcessStep = 4;
+      let limit = promiseLimit(15);
+    };//uploadSourceAndUnCookedFiles
+
+    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(() => {
+      console.log(this._analysisAssetList);
+      this._uploadingProcess = false;
+    }, err => {
+      this._uploadingProcess = false;
+      console.error('upload error:', err);
+    });
 
   }//upload
-
 
   confirmLeaveUploader() {
     this.dialogSrv.open(SimpleMessageDialogComponent, { width: '300px', height: '250px', data: { message: 'message.waitTilFinishUploadingBeforeLeaving' } });
