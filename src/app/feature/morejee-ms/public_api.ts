@@ -12,3 +12,4 @@ export * from './services/map.service';
 export * from './services/texture.service';
 export * from './services/material.service';
 export * from './services/static-mesh.service';
+export * from './services/icon.service';

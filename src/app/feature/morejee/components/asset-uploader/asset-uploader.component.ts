@@ -6,7 +6,7 @@ import * as fsExtra from "fs-extra";
 import * as  md5File from 'md5-file';
 import { MatDialog } from '@angular/material/dialog';
 import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
-import { FileassetService, SrcClientAssetService, MapService, Map, TextureService, Texture, MaterialService, Material, StaticMeshService, StaticMesh } from '@app/morejee-ms';
+import { FileassetService, SrcClientAssetService, MapService, Map, TextureService, Texture, MaterialService, Material, StaticMeshService, StaticMesh, IconService } from '@app/morejee-ms';
 import * as request from 'request';
 import * as promiseLimit from 'promise-limit';
 import { AssetUploaderMd5CacheService } from '../../services/asset-uploader-md5-cache.service';
@@ -271,7 +271,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
   upload() {
 
-    this._uploadingProcess = true;
+    // this._uploadingProcess = true;
 
     let allSFPackages = [];
     let iconSFPackages = [];
@@ -379,16 +379,44 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     let uploadIconFiles = () => {
       this._uploadingProcessStep = 3;
       let limit = promiseLimit(15);
-      let uploadIcon = (it: SingleFile) => {
+      let uploadFile = (it: SingleFile) => {
         return new Promise((resolve, reject) => {
           if (it._notExist) return resolve();
+          if (it._url) return resolve();
+
+          nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/icons/stream`, (err, url) => {
+            if (err) {
+              console.error('上传icon file异常:', err);
+              return resolve();
+            }
+
+            it._url = url;
+            resolve();
+          });//nodeJsAPIUploadFile
+        });//Promise
+      };//uploadFile
+
+      return Promise.all(iconSFPackages.map(lcp => {
+        let it = this._analysisAssetList.singleFiles[lcp];
+        return limit(() => uploadFile(it));
+      }));
+    };//uploadIcon
+
+    //上传原资源文件
+    let uploadSourceAndUnCookedFiles = () => {
+      this._uploadingProcessStep = 4;
+      let limit = promiseLimit(15);
+      let uploadFile = (it: SingleFile) => {
+        return new Promise((resolve, reject) => {
+          if (it._notExist) return resolve();
+          if (it._url) return resolve();
           this.srcAssetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
             if (url) {
               it._url = url;
               return resolve();
             }
 
-            nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/icons/stream`, (err, url) => {
+            nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/srcClientAssets/stream`, (err, url) => {
               if (err) {
                 console.error('上传source file异常:', err);
                 return resolve();
@@ -399,26 +427,51 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
             });//nodeJsAPIUploadFile
           });//checkFileExistByMd5
         });//Promise
-      };//uploadIcon
+      };//uploadFile 
 
-      return Promise.all(iconSFPackages.map(lcp => {
+      return Promise.all(sourceSFPackages.map(lcp => {
         let it = this._analysisAssetList.singleFiles[lcp];
-        return limit(() => uploadIcon(it));
-      }));
-    };//uploadIcon
-
-    //上传原资源文件
-    let uploadSourceAndUnCookedFiles = () => {
-      this._uploadingProcessStep = 4;
-      let limit = promiseLimit(15);
+        return limit(() => uploadFile(it));
+      })); 
     };//uploadSourceAndUnCookedFiles
 
-    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(() => {
+    let uploadAlPlatformCookedFiles = () => {
+      this._uploadingProcessStep = 5;
+      let limit = promiseLimit(15);
+      let uploadFile = (it: SingleFile) => {
+        return new Promise((resolve, reject) => {
+          if (it._notExist) return resolve();
+          if (it._url) return resolve();
+          this.assetSrv.checkFileExistByMd5(it._md5).subscribe(url => {
+            if (url) {
+              it._url = url;
+              return resolve();
+            }
+
+            nodeJsAPIUploadFile(it.localPath, `${this.configSrv.server}/oss/files/stream`, (err, url) => {
+              if (err) {
+                console.error('上传cooked file异常:', err);
+                return resolve();
+              }
+
+              it._url = url;
+              resolve();
+            });//nodeJsAPIUploadFile
+          });//checkFileExistByMd5
+        });//Promise
+      };//uploadFile
+      return Promise.all(cookedSFPackages.map(lcp => {
+        let it = this._analysisAssetList.singleFiles[lcp];
+        return limit(() => uploadFile(it));
+      }));
+    };//uploadAlPlatformCookedFiles
+
+    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(uploadSourceAndUnCookedFiles).then(uploadAlPlatformCookedFiles).then(() => {
       console.log(this._analysisAssetList);
       this._uploadingProcess = false;
     }, err => {
       this._uploadingProcess = false;
-      console.error('upload error:', err);
+      console.error('upload error:', err); 
     });
 
   }//upload

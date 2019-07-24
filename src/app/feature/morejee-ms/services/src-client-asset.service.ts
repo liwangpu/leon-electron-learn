@@ -5,7 +5,7 @@ import { AppConfigService } from '@app/core';
 @Injectable()
 export class SrcClientAssetService {
 
-  private get _URI() {
+  get _URI() {
     return `${this.configSrv.server}/oss/srcClientAssets`;
   }
   constructor(protected configSrv: AppConfigService, protected httpClient: HttpClient) {
