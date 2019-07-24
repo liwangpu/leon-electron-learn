@@ -28,6 +28,7 @@ class AssetItem {
   static getPackageMap(it: AssetItem): PackageMap {
     let mp = new PackageMap();
     mp.package = it.package;
+    mp.property = it.property;
     mp.dependencies = it.dependencies;
     return mp;
   }//getPackageMap
@@ -125,6 +126,7 @@ class PackageMap {
   _androidCookedAssetUrl: string;
   _iosCookedAssetUrl: string;
   package: string;
+  property: string;
   dependencies: string[] = [];
   dependencyRelationOfSrc: PackageMapRelation[] = [];
   dependencyRelationOfUnCooked: PackageMapRelation[] = [];
@@ -518,7 +520,6 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
         if (iosCookedFS)
           it._iosCookedAssetUrl = iosCookedFS._url;
       }//for
-
 
       return Promise.resolve();
     }//setPackageAssetUrls
