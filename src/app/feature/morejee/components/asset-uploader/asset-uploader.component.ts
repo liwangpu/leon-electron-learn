@@ -6,7 +6,7 @@ import * as fsExtra from "fs-extra";
 import * as  md5File from 'md5-file';
 import { MatDialog } from '@angular/material/dialog';
 import { SimpleMessageDialogComponent } from '../simple-message-dialog/simple-message-dialog.component';
-import { FileassetService, SrcClientAssetService, MapService, Map, TextureService, Texture, MaterialService, Material, StaticMeshService, StaticMesh, IconService } from '@app/morejee-ms';
+import { FileassetService, SrcClientAssetService, MapService, Map, TextureService, Texture, MaterialService, Material, StaticMeshService, StaticMesh, IconService, PackageMapService } from '@app/morejee-ms';
 import * as request from 'request';
 import * as promiseLimit from 'promise-limit';
 import { AssetUploaderMd5CacheService } from '../../services/asset-uploader-md5-cache.service';
@@ -200,7 +200,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     return Object.keys(this._analysisAssetList.singleFiles).length;
   }
 
-  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected srcAssetSrv: SrcClientAssetService, protected mapSrv: MapService, protected textureSrv: TextureService, protected materialSrv: MaterialService, protected meshSrv: StaticMeshService) {
+  constructor(protected electDialogSrv: ElectronDialogService, protected messageSrv: MessageCenterService, protected dialogSrv: MatDialog, private assetSrv: FileassetService, protected cacheSrv: AppCacheService, protected configSrv: AppConfigService, protected assetMd5CacheSrv: AssetUploaderMd5CacheService, protected srcAssetSrv: SrcClientAssetService, protected mapSrv: MapService, protected textureSrv: TextureService, protected materialSrv: MaterialService, protected meshSrv: StaticMeshService, protected pckMapSrv: PackageMapService) {
 
   }//constructor
 

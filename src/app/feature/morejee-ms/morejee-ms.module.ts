@@ -6,6 +6,7 @@ import { TextureService } from "./services/texture.service";
 import { MaterialService } from "./services/material.service";
 import { StaticMeshService } from "./services/static-mesh.service";
 import { IconService } from "./services/icon.service";
+import { PackageMapService } from "./services/package-map.service";
 
 
 @NgModule({
@@ -16,7 +17,8 @@ import { IconService } from "./services/icon.service";
     TextureService,
     MaterialService,
     StaticMeshService,
-    IconService
+    IconService,
+    PackageMapService
   ]
 })
 export class MorejeeMsModule { }
