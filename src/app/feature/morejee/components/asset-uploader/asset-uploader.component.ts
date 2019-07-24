@@ -30,6 +30,7 @@ class AssetItem {
     let f = new SingleFile();
     f.fileType = FileType.Icon;
     f.package = it.package;
+    f.name = it.name;
     f.localPath = it.iconFile;
     return f;
   }//getIconFile
@@ -39,6 +40,7 @@ class AssetItem {
     let f = new SingleFile();
     f.fileType = FileType.Source;
     f.package = it.package;
+    f.name = it.name;
     f.localPath = it.srcFile;
     return f;
   }//getSourceFile
@@ -48,6 +50,7 @@ class AssetItem {
     let f = new SingleFile();
     f.fileType = FileType.UCooked;
     f.package = it.package;
+    f.name = it.name;
     f.localPath = it.unCookedFile;
     return f;
   }//getUnCookedFile
@@ -55,8 +58,9 @@ class AssetItem {
   static getWin64CookedFile(it: AssetItem): SingleFile {
     if (!it.win64CookedFile) return null;
     let f = new SingleFile();
-    f.fileType = FileType.Cooked;
+    f.fileType = FileType.Win64Cooked;
     f.package = it.package;
+    f.name = it.name;
     f.localPath = it.win64CookedFile;
     return f;
   }//getWin64CookedFile
@@ -64,8 +68,9 @@ class AssetItem {
   static getAndroidCookedFile(it: AssetItem): SingleFile {
     if (!it.androidCookedFile) return null;
     let f = new SingleFile();
-    f.fileType = FileType.Cooked;
+    f.fileType = FileType.AndroidCooked;
     f.package = it.package;
+    f.name = it.name;
     f.localPath = it.androidCookedFile;
     return f;
   }//getAndroidCookedFile
@@ -73,8 +78,9 @@ class AssetItem {
   static getIOSCookedFile(it: AssetItem): SingleFile {
     if (!it.iosCookedFile) return null;
     let f = new SingleFile();
-    f.fileType = FileType.Cooked;
+    f.fileType = FileType.IOSCooked;
     f.package = it.package;
+    f.name = it.name;
     f.localPath = it.iosCookedFile;
     return f;
   }//getIOSCookedFile
@@ -119,6 +125,7 @@ class SingleFile {
   _modifiedTime: number;
   _notExist: boolean;
   package: string;
+  name: string;
   fileType: FileType;
   localPath: string;
 }
@@ -132,10 +139,12 @@ enum ClientObjectType {
 }
 
 enum FileType {
-  Icon,
-  Source,
-  UCooked,
-  Cooked
+  Icon = "Icon",
+  Source = "Source",
+  UCooked = "UnCooked",
+  Win64Cooked = "Win64Cooked",
+  AndroidCooked = "AndroidCooked",
+  IOSCooked = "IOSCooked",
 }
 
 function generateCDKEY(pck: string, ft: FileType) {
@@ -158,6 +167,9 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   _uploadingProcess = false;
   _uploadingProcessStep = 0;
   _analysisAssetList = new AnalysisAssetList();
+  get allAssetCount() {
+    return Object.keys(this._analysisAssetList.singleFiles).length;
+  }
 
 
 
@@ -229,15 +241,13 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           if (err) return reject(`assetlist.json JSON解析异常:${err}`);
 
           for (let it of assetList) {
-            console.log(1, it);
-
             let clientObj = AssetItem.getClientAssetObject(it);
             let iconSF = AssetItem.getIconFile(it);
             let srcSF = AssetItem.getSourceFile(it);
             let unCookedSF = AssetItem.getUnCookedFile(it);
             let win64CookSF = AssetItem.getWin64CookedFile(it);
             let androidCookedSF = AssetItem.getAndroidCookedFile(it);
-            let iosCookedSF = AssetItem.getAndroidCookedFile(it);
+            let iosCookedSF = AssetItem.getIOSCookedFile(it);
             if (iconSF)
               this._analysisAssetList.singleFiles[generateCDKEY(iconSF.package, iconSF.fileType)] = iconSF;
             if (srcSF)
@@ -252,10 +262,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               this._analysisAssetList.singleFiles[generateCDKEY(iosCookedSF.package, iosCookedSF.fileType)] = iosCookedSF;
             if (clientObj)
               this._analysisAssetList.clientObjects[clientObj.package] = clientObj;
-
-
           }//for
-
 
           resolve();
         });//readJSON

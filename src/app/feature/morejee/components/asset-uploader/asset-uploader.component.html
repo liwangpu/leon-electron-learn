@@ -20,12 +20,12 @@
           </tr>
         </thead>
         <tbody>
-          <!-- <tr *ngFor="let ky of _analyzeFileStructure.files|keyvalue;let idx=index;">
+          <tr *ngFor="let ky of _analysisAssetList.singleFiles|keyvalue;let idx=index;">
             <td>{{idx+1}}</td>
             <td class="lj">{{ky.value.package}}</td>
             <td class="lj">{{ky.value.name}}</td>
-            <td class="lj">{{ky.value.class}}</td>
-          </tr> -->
+            <td class="lj">{{ky.value.fileType}}</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -48,8 +48,8 @@
     </div>
   </div>
   <div class="footer">
-    <!-- <p class="process" *ngIf='allAssetCount>0'>
+    <p class="process" *ngIf='allAssetCount>0'>
       {{'glossary.count'|translate}}：{{allAssetCount}}
-    </p> -->
+    </p>
   </div>
 </div>
