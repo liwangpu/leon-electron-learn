@@ -28,6 +28,7 @@ class AssetItem {
   static getIconFile(it: AssetItem): SingleFile {
     if (!it.iconFile) return null;
     let f = new SingleFile();
+    f.fileType = FileType.Icon;
     f.package = it.package;
     f.localPath = it.iconFile;
     return f;
@@ -36,6 +37,7 @@ class AssetItem {
   static getSourceFile(it: AssetItem): SingleFile {
     if (!it.srcFile) return null;
     let f = new SingleFile();
+    f.fileType = FileType.Source;
     f.package = it.package;
     f.localPath = it.srcFile;
     return f;
@@ -44,6 +46,7 @@ class AssetItem {
   static getUnCookedFile(it: AssetItem): SingleFile {
     if (!it.unCookedFile) return null;
     let f = new SingleFile();
+    f.fileType = FileType.UCooked;
     f.package = it.package;
     f.localPath = it.unCookedFile;
     return f;
@@ -52,6 +55,7 @@ class AssetItem {
   static getWin64CookedFile(it: AssetItem): SingleFile {
     if (!it.win64CookedFile) return null;
     let f = new SingleFile();
+    f.fileType = FileType.Cooked;
     f.package = it.package;
     f.localPath = it.win64CookedFile;
     return f;
@@ -60,6 +64,7 @@ class AssetItem {
   static getAndroidCookedFile(it: AssetItem): SingleFile {
     if (!it.androidCookedFile) return null;
     let f = new SingleFile();
+    f.fileType = FileType.Cooked;
     f.package = it.package;
     f.localPath = it.androidCookedFile;
     return f;
@@ -68,15 +73,43 @@ class AssetItem {
   static getIOSCookedFile(it: AssetItem): SingleFile {
     if (!it.iosCookedFile) return null;
     let f = new SingleFile();
+    f.fileType = FileType.Cooked;
     f.package = it.package;
     f.localPath = it.iosCookedFile;
     return f;
   }//getIOSCookedFile
+
+  static getClientAssetObject(it: AssetItem): ClientAssetObject {
+    if (!it.class) return null;
+    let cobj = new ClientAssetObject();
+    cobj.name = it.name;
+    cobj.package = it.package;
+    if (it.class.indexOf("World") > -1)
+      cobj.classType = ClientObjectType.Map;
+    else if (it.class.indexOf("Texture") > -1)
+      cobj.classType = ClientObjectType.Texture;
+    else if (it.class.indexOf("Material") > -1)
+      cobj.classType = ClientObjectType.Material;
+    else if (it.class.indexOf("StaticMesh") > -1)
+      cobj.classType = ClientObjectType.StaticMesh;
+    else
+      cobj.classType = ClientObjectType.Other;
+    return cobj;
+  }//getClientAssetObject
+
+}
+
+class AnalysisAssetList {
+
+  clientObjects: { [key: string]: ClientAssetObject } = {};
+  singleFiles: { [key: string]: SingleFile } = {};
 }
 
 class ClientAssetObject {
   name: string;
   icon: string;
+  package: string;
+  classType: ClientObjectType
 }
 
 class SingleFile {
@@ -90,6 +123,14 @@ class SingleFile {
   localPath: string;
 }
 
+enum ClientObjectType {
+  Map,
+  Texture,
+  StaticMesh,
+  Material,
+  Other
+}
+
 enum FileType {
   Icon,
   Source,
@@ -97,7 +138,9 @@ enum FileType {
   Cooked
 }
 
-
+function generateCDKEY(pck: string, ft: FileType) {
+  return `${pck}@@${ft}`;
+}//生成类型和package唯一识别码
 
 @Component({
   selector: 'morejee-asset-uploader',
@@ -114,7 +157,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
   _analyzeFileStructureProcess = false;
   _uploadingProcess = false;
   _uploadingProcessStep = 0;
-
+  _analysisAssetList = new AnalysisAssetList();
 
 
 
@@ -149,7 +192,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
 
   clearAssetList() {
     this._projectDir = "";
-    // this.allAsset = {};
+    this._analysisAssetList = new AnalysisAssetList();
   }//clearAssetList
 
   selectProjectDir() {
@@ -188,13 +231,27 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
           for (let it of assetList) {
             console.log(1, it);
 
-
-
-
-
-
-
-
+            let clientObj = AssetItem.getClientAssetObject(it);
+            let iconSF = AssetItem.getIconFile(it);
+            let srcSF = AssetItem.getSourceFile(it);
+            let unCookedSF = AssetItem.getUnCookedFile(it);
+            let win64CookSF = AssetItem.getWin64CookedFile(it);
+            let androidCookedSF = AssetItem.getAndroidCookedFile(it);
+            let iosCookedSF = AssetItem.getAndroidCookedFile(it);
+            if (iconSF)
+              this._analysisAssetList.singleFiles[generateCDKEY(iconSF.package, iconSF.fileType)] = iconSF;
+            if (srcSF)
+              this._analysisAssetList.singleFiles[generateCDKEY(srcSF.package, srcSF.fileType)] = srcSF;
+            if (unCookedSF)
+              this._analysisAssetList.singleFiles[generateCDKEY(unCookedSF.package, unCookedSF.fileType)] = unCookedSF;
+            if (win64CookSF)
+              this._analysisAssetList.singleFiles[generateCDKEY(win64CookSF.package, win64CookSF.fileType)] = win64CookSF;
+            if (androidCookedSF)
+              this._analysisAssetList.singleFiles[generateCDKEY(androidCookedSF.package, androidCookedSF.fileType)] = androidCookedSF;
+            if (iosCookedSF)
+              this._analysisAssetList.singleFiles[generateCDKEY(iosCookedSF.package, iosCookedSF.fileType)] = iosCookedSF;
+            if (clientObj)
+              this._analysisAssetList.clientObjects[clientObj.package] = clientObj;
 
 
           }//for
@@ -206,7 +263,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     }//analyzeAssetFromConfig
 
     checkAssetListFile(configPath).then(analyzeAssetFromConfig).then(() => {
-      console.log('successful,');
+      console.log(this._analysisAssetList);
       this._analyzeFileStructureProcess = false;
     }, err => {
       console.log('err:', err);
