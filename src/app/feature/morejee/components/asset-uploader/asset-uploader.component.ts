@@ -55,7 +55,7 @@ class AssetItem {
   static getUnCookedFile(it: AssetItem): SingleFile {
     if (!it.unCookedFile) return null;
     let f = new SingleFile();
-    f.fileType = FileType.UCooked;
+    f.fileType = FileType.UnCooked;
     f.package = it.package;
     f.name = it.name;
     f.localPath = it.unCookedFile;
@@ -113,14 +113,29 @@ class AssetItem {
 }
 
 class AnalysisAssetList {
-  packageMaps: PackageMap[] = [];
+  packageMaps: { [key: string]: PackageMap } = {};
   clientObjects: { [key: string]: ClientAssetObject } = {};
   singleFiles: { [key: string]: SingleFile } = {};
 }
 
 class PackageMap {
+  _srcAssetUrl: string;
+  _unCookedAssetUrl: string;
+  _win64CookedAssetUrl: string;
+  _androidCookedAssetUrl: string;
+  _iosCookedAssetUrl: string;
   package: string;
-  dependencies: string[];
+  dependencies: string[] = [];
+  dependencyRelationOfSrc: PackageMapRelation[] = [];
+  dependencyRelationOfUnCooked: PackageMapRelation[] = [];
+  dependencyRelationOfWin64Cooked: PackageMapRelation[] = [];
+  dependencyRelationOfAndroidCooked: PackageMapRelation[] = [];
+  dependencyRelationOfIOSCooked: PackageMapRelation[] = [];
+}
+
+class PackageMapRelation {
+  constructor(public packageName: string, public assetUrl: string) {
+  }
 }
 
 class ClientAssetObject {
@@ -153,7 +168,7 @@ enum ClientObjectType {
 enum FileType {
   Icon = "Icon",
   Source = "Source",
-  UCooked = "UnCooked",
+  UnCooked = "UnCooked",
   Win64Cooked = "Win64Cooked",
   AndroidCooked = "AndroidCooked",
   IOSCooked = "IOSCooked",
@@ -250,6 +265,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
             let win64CookSF = AssetItem.getWin64CookedFile(it);
             let androidCookedSF = AssetItem.getAndroidCookedFile(it);
             let iosCookedSF = AssetItem.getIOSCookedFile(it);
+            let pckMap = AssetItem.getPackageMap(it);
             if (iconSF)
               this._analysisAssetList.singleFiles[generateCDKEY(iconSF.package, iconSF.fileType)] = iconSF;
             if (srcSF)
@@ -264,6 +280,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
               this._analysisAssetList.singleFiles[generateCDKEY(iosCookedSF.package, iosCookedSF.fileType)] = iosCookedSF;
             if (clientObj)
               this._analysisAssetList.clientObjects[clientObj.package] = clientObj;
+            this._analysisAssetList.packageMaps[pckMap.package] = pckMap;
           }//for
 
           resolve();
@@ -272,7 +289,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
     };//analyzeAssetFromConfig
 
     checkAssetListFile(configPath).then(analyzeAssetFromConfig).then(() => {
-      // console.log(this._analysisAssetList);
+      console.log(this._analysisAssetList);
       this._analyzeFileStructureProcess = false;
     }, err => {
       console.error('selectProjectDir err:', err);
@@ -297,7 +314,7 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       allPackages.push(pck);
       if (it.fileType == FileType.Icon)
         iconSFPackages.push(pck);
-      else if (it.fileType == FileType.Source || it.fileType == FileType.UCooked)
+      else if (it.fileType == FileType.Source || it.fileType == FileType.UnCooked)
         sourceSFPackages.push(pck);
       else
         cookedSFPackages.push(pck);
@@ -481,11 +498,61 @@ export class AssetUploaderComponent implements OnInit, OnDestroy {
       }));
     };//uploadAlPlatformCookedFiles
 
+    let setPackageAssetUrls = () => {
+      for (let pckName in this._analysisAssetList.packageMaps) {
+        let it = this._analysisAssetList.packageMaps[pckName];
+
+        let srcFS = this._analysisAssetList.singleFiles[generateCDKEY(pckName, FileType.Source)];
+        let unCookedFS = this._analysisAssetList.singleFiles[generateCDKEY(pckName, FileType.UnCooked)];
+        let win64CookedFS = this._analysisAssetList.singleFiles[generateCDKEY(pckName, FileType.Win64Cooked)];
+        let androidCookedFS = this._analysisAssetList.singleFiles[generateCDKEY(pckName, FileType.AndroidCooked)];
+        let iosCookedFS = this._analysisAssetList.singleFiles[generateCDKEY(pckName, FileType.IOSCooked)];
+        if (srcFS)
+          it._srcAssetUrl = srcFS._url;
+        if (unCookedFS)
+          it._unCookedAssetUrl = unCookedFS._url;
+        if (win64CookedFS)
+          it._win64CookedAssetUrl = win64CookedFS._url;
+        if (androidCookedFS)
+          it._androidCookedAssetUrl = androidCookedFS._url;
+        if (iosCookedFS)
+          it._iosCookedAssetUrl = iosCookedFS._url;
+      }//for
+
+
+      return Promise.resolve();
+    }//setPackageAssetUrls
+
     let analyzePackageMaps = () => {
 
+      let findRelation = (parent: PackageMap, dePckName: string) => {
+        let dePck = this._analysisAssetList.packageMaps[dePckName];
+
+        for (let subPckName of dePck.dependencies) findRelation(parent, subPckName);
+
+        if (dePck._srcAssetUrl)
+          parent.dependencyRelationOfSrc.push(new PackageMapRelation(dePck.package, dePck._srcAssetUrl));
+        if (dePck._unCookedAssetUrl)
+          parent.dependencyRelationOfUnCooked.push(new PackageMapRelation(dePck.package, dePck._unCookedAssetUrl));
+        if (dePck._win64CookedAssetUrl)
+          parent.dependencyRelationOfWin64Cooked.push(new PackageMapRelation(dePck.package, dePck._win64CookedAssetUrl));
+        if (dePck._androidCookedAssetUrl)
+          parent.dependencyRelationOfAndroidCooked.push(new PackageMapRelation(dePck.package, dePck._androidCookedAssetUrl));
+        if (dePck._iosCookedAssetUrl)
+          parent.dependencyRelationOfIOSCooked.push(new PackageMapRelation(dePck.package, dePck._iosCookedAssetUrl));
+      };
+      for (let pckName in this._analysisAssetList.packageMaps) {
+        let parent = this._analysisAssetList.packageMaps[pckName];
+
+        for (let pn of parent.dependencies) {
+          findRelation(parent, pn);
+        }
+      }//for
+
+      return Promise.resolve();
     };//analyzePackageMaps
 
-    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(uploadSourceAndUnCookedFiles).then(uploadAlPlatformCookedFiles).then(() => {
+    fixLocalPathError().then(checkAssetStat).then(calcFileMD5).then(uploadIconFiles).then(uploadSourceAndUnCookedFiles).then(uploadAlPlatformCookedFiles).then(setPackageAssetUrls).then(analyzePackageMaps).then(() => {
       console.log(this._analysisAssetList);
       this._uploadingProcess = false;
     }, err => {
